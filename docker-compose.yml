@@ -11,13 +11,35 @@ mongo:
 # Full-text search & analytics DB
 elastic:
     image: elasticsearch
+
 # Kafka (A scalable queue) + Zookeeper (Distributed conf. service)
 kzk:
     image: spotify/kafka
-storm:
-    image: todo
+
+# nimbus: supervises everything; talks to zookeeper
+nimbus:
+    image: eucm/storm-nimbus
+    ports:
+        - "6627:6627"
     links:
         - kzk
+
+# ui: allows access to logs
+ui:
+    image: eucm/storm-ui
+    ports: 
+        - "8081:8081"
+    links: 
+        - nimbus
+        - kzk 
+
+# supervisor: supervises actual workers
+supervisor:
+    image: eucm/storm-supervisor
+    links:
+        - nimbus
+        - kzk
+
 
 # OpenLRS, an open LRS that speaks xAPI
 lrs:
