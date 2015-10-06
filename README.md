@@ -31,3 +31,18 @@ Exposed ports can be easily altered by modifying `docker-compose.yml` (eg.: chan
 ## Under the hood
 
 Timing delays in `launch_all.sh` have been tested in a system with an SSD (=fast) hard disk and 8 GB RAM. You may need to increase these delays in slower systems.
+
+To rebuild a particular image, checkout the images' source with git, change whatever files you fancy, and then,
+1. stop the service if it is runing via `docker-compose kill <service-name>`
+2. rebuild the image, and tag it as the service you are replacing via `docker build -t <image-tag> <dockerfile-location>`
+3. relaunch the service `docker-compose up <service-name>`
+4. 
+
+Example: the following statements would rebuild `rage-analytics-backend`
+```
+  git clone https://github.com/e-ucm/rage-analytics-backend
+  # ... change stuff
+  docker-compose kill back
+  docker build -t eucm/rage-analytics-backend rage-analytics-backend
+  docker-compose up back
+```
