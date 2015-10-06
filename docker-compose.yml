@@ -1,0 +1,92 @@
+#
+# RAGE WP2 server-side infrastructure
+#
+
+# A fast in-memory store
+redis:
+    image: redis
+# A scalable cache
+mongo:
+    image: mongo
+# Full-text search & analytics DB
+elastic:
+    image: elasticsearch
+
+# Kafka (A scalable queue) + Zookeeper (Distributed conf. service)
+kzk:
+    image: spotify/kafka
+
+# nimbus: supervises everything; talks to zookeeper
+nimbus:
+    image: eucm/storm-nimbus
+    ports:
+        - "6627:6627"
+    links:
+        - kzk
+
+# ui: allows access to logs
+ui:
+    image: eucm/storm-ui
+    ports: 
+        - "8081:8081"
+    links: 
+        - nimbus
+        - kzk 
+
+# supervisor: supervises actual workers
+supervisor:
+    image: eucm/storm-supervisor
+    links:
+        - nimbus
+        - kzk
+
+
+# OpenLRS, an open LRS that speaks xAPI
+lrs:
+    image: eucm/openlrs
+    ports:
+        - "8080:8080"
+    links:
+        - elastic
+        - redis
+
+# Authentication & Authorization
+# (part of SDA asset: Sever-side Dashboard & Analytics)
+a2:
+    image: eucm/a2
+    ports: 
+        - "3000:3000"
+    links: 
+        - redis
+        - mongo
+
+# Analytics Backend
+# (SISA asset: Server-side Interaction Storage & Analytics)
+back:
+    image: eucm/rage-analytics-backend
+    ports:
+        - "3300:3300"
+    links:
+        - a2
+        - kzk
+        - lrs
+        - mongo
+    environment: 
+        - RAGE_ANALYTICS_BACKEND_nimbusHost=$NIMBUS_PORT
+
+# Analytics Frontend
+# (part of SDA asset: Server-side Dashboard and Analytics)
+front:
+    image: eucm/rage-analytics-frontend
+    ports:
+        - "3350:3350"
+    links:
+        - a2
+
+# LostInSpace, a sample game with tracking enabled
+#   http://<ip>:9090/setup to set it up, and
+#   http://<ip>:9090/1 to access the 1st game (and so on)
+lis:
+    image: eucm/lostinspace
+    ports:
+        - "9090:9090"
