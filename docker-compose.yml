@@ -71,8 +71,7 @@ back:
         - kzk
         - lrs
         - mongo
-    environment: 
-        - RAGE_ANALYTICS_BACKEND_nimbusHost=$NIMBUS_PORT
+        - nimbus
 
 # Analytics Frontend
 # (part of SDA asset: Server-side Dashboard and Analytics)
