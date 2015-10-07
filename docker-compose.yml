@@ -40,7 +40,6 @@ supervisor:
         - nimbus
         - kzk
 
-
 # OpenLRS, an open LRS that speaks xAPI
 lrs:
     image: eucm/openlrs
@@ -60,6 +59,10 @@ a2:
         - redis
         - mongo
 
+# Generates RealTime analytics jar, used in Analytics Backend
+realtime:
+    image: eucm/rage-analytics-realtime
+
 # Analytics Backend
 # (SISA asset: Server-side Interaction Storage & Analytics)
 back:
@@ -71,8 +74,13 @@ back:
         - kzk
         - lrs
         - mongo
-    environment: 
-        - RAGE_ANALYTICS_BACKEND_nimbusHost=$NIMBUS_PORT
+        - nimbus
+    volumes_from:
+        - realtime
+        - nimbus
+    environment:
+        - RAGE_ANALYTICS_BACKEND_STORMPATH=/app/storm_vol/bin
+        - RAGE_ANALYTICS_BACKEND_REALTIMEJAR=/app/output/realtime-jar-with-dependencies.jar
 
 # Analytics Frontend
 # (part of SDA asset: Server-side Dashboard and Analytics)
@@ -82,6 +90,7 @@ front:
         - "3350:3350"
     links:
         - a2
+        - back
 
 # LostInSpace, a sample game with tracking enabled
 #   http://<ip>:9090/setup to set it up, and
@@ -90,3 +99,4 @@ lis:
     image: eucm/lostinspace
     ports:
         - "9090:9090"
+
