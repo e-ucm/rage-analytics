@@ -25,9 +25,8 @@ echo "       Launching images"
 echo "-------------------------------"
 launch 60 redis mongo elastic kzk
 launch 50 nimbus lrs
-launch 30 a2 supervisor ui
+launch 30 a2 supervisor ui realtime
 launch 10 back front lis
-
 
 echo "     All images launched"
 echo "-------------------------------"
