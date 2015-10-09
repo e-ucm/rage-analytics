@@ -6,13 +6,12 @@ The RAGE Analytics Environment is a key component of the [RAGE](http://rageproje
 (Realizing an Applied Game Ecosystem), in charge of providing extensible, scalable, and simple-to-manage
 game analytics for applied games.
 
-We rely on docker containers to modularize and simplify deployment; and on docker-compose 
-to manage and orchestrate (or, dare I say, _compose_) those containers. 
+We rely on [docker](https://docs.docker.com/installation/) to modularize and simplify deployment; and on [docker-compose](https://docs.docker.com/compose/) to manage and orchestrate (or, dare I say, _compose_) those containers. 
 
 ## Simple usage
 
-0. Install [docker-compose](https://docs.docker.com/compose/) (which requires [docker](https://docs.docker.com/installation/) itself).
-1. `launch_all.sh`
+0. Open a shell in a recent linux (we use Ubuntu 14.04+). You must be root (`sudo su -`) unless you already have `docker` running and `docker-compose` installed 
+1. `wget -O - https://raw.githubusercontent.com/e-ucm/rage-analytics/master/launch-all.sh | /bin/bash`
 
 ... and type `docker-compose ps` to check that everything has been launched.
 
