@@ -36,6 +36,7 @@ function update_compose() {
   if ( version_ge 'docker' '1.7' ) ; then
     require_root
     curl -sSL https://get.docker.com/ | sh 
+    ( docker -d & )
   fi
   if ( version_ge 'docker-compose' '1.4.2' ) ; then
     require_root
@@ -79,10 +80,10 @@ function main() {
   get_composition_and_containers
   echo "       Launching images"
   echo "-------------------------------"
-  launch 60 redis mongo elastic kzk
-  launch 50 nimbus lrs
-  launch 30 a2 supervisor ui realtime
-  launch 10 back front lis
+  launch_and_wait 60 redis mongo elastic kzk
+  launch_and_wait 50 nimbus lrs
+  launch_and_wait 30 a2 supervisor ui realtime
+  launch_and_wait 10 back front lis
   echo "     All images launched"
   echo "-------------------------------"
   docker-compose ps
