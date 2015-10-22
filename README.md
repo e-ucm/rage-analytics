@@ -43,6 +43,9 @@ Example: the following statements would rebuild `rage-analytics-backend`
   git clone https://github.com/e-ucm/rage-analytics-backend
   # ... change stuff
   docker-compose kill back
+  docker-compose rm back 
   docker build -t eucm/rage-analytics-backend rage-analytics-backend
   docker-compose up back
 ```
+
+Notice that, by killing a container, you only stop it; it will be restarted again (and not launched-from-latest-image) unless you actually remove it (via `docker-compose rm`).
