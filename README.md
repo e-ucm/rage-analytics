@@ -14,7 +14,25 @@ We rely on [docker](https://docs.docker.com/installation/) to modularize and sim
 1. `wget -O - https://raw.githubusercontent.com/e-ucm/rage-analytics/master/launch-all.sh | /bin/bash`
 2. follow the instructions in the [Quickstart guide](https://github.com/e-ucm/rage-analytics/wiki/Quickstart) to learn more 
 
-... and type `docker-compose ps` to check that everything has been launched.
+... and type `docker-compose ps` to check that everything has been launched. Expected output:
+
+```
+           Name                         Command               State                    Ports                  
+-------------------------------------------------------------------------------------------------------------
+rageanalytics_a2_1           npm run docker-start             Up       0.0.0.0:3000->3000/tcp                 
+rageanalytics_back_1         npm run docker-start             Up       0.0.0.0:3300->3300/tcp                 
+rageanalytics_elastic_1      /docker-entrypoint.sh elas ...   Up       9200/tcp, 9300/tcp                     
+rageanalytics_front_1        npm run docker-start             Up       0.0.0.0:3350->3350/tcp                 
+rageanalytics_kzk_1          supervisord -n                   Up       2181/tcp, 9092/tcp                     
+rageanalytics_lis_1          mvn -Djetty.port=9090 inst ...   Up       0.0.0.0:9090->9090/tcp                 
+rageanalytics_lrs_1          ./run.sh                         Up       0.0.0.0:8080->8080/tcp                 
+rageanalytics_mongo_1        /entrypoint.sh mongod            Up       27017/tcp                              
+rageanalytics_nimbus_1       /bin/sh -c ./goStorm.sh nimbus   Up       0.0.0.0:6627->6627/tcp                 
+rageanalytics_realtime_1     /bin/sh -c cp ${OUTPUT_JAR ...   Exit 0                                          
+rageanalytics_redis_1        /entrypoint.sh redis-server      Up       6379/tcp                               
+rageanalytics_supervisor_1   /bin/sh -c ./goStorm.sh su ...   Up       6700/tcp, 6701/tcp, 6702/tcp, 6703/tcp 
+rageanalytics_ui_1           /bin/sh -c ./goStorm.sh ui       Up       0.0.0.0:8081->8081/tcp 
+```
 
 The following services will be launched:
 * `a2` at `http://localhost:3000`: running [Authentication&Authorization](https://github.com/e-ucm/a2) server. Allows registering server-side applications (such as the `rage-analytics-backend`) 
