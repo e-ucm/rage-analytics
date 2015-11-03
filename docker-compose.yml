@@ -10,7 +10,7 @@ mongo:
     image: mongo
 # Full-text search & analytics DB
 elastic:
-    image: elasticsearch
+    image: elasticsearch:1.7.3
 
 # Kafka (A scalable queue) + Zookeeper (Distributed conf. service)
 kzk:
