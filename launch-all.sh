@@ -71,7 +71,7 @@ function launch_and_wait() {
   echo
   echo "... launching $SERVICES and waiting $DELAY seconds ..."
   echo
-  docker-compose up $SERVICES &
+  docker-compose up -d --force-recreate --no-deps $SERVICES &
   sleep "${DELAY}s"
 }
 
@@ -82,7 +82,8 @@ function main() {
   echo "-------------------------------"
   launch_and_wait 60 redis mongo elastic kzk
   launch_and_wait 50 nimbus lrs
-  launch_and_wait 30 a2 supervisor ui realtime
+  launch_and_wait 5 realtime
+  launch_and_wait 30 a2 supervisor ui
   launch_and_wait 10 back front lis
   echo "     All images launched"
   echo "-------------------------------"
