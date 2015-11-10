@@ -4,19 +4,21 @@
 
 # A fast in-memory store
 redis:
-    image: redis
+    image: redis:3.0
 # A scalable cache
 mongo:
-    image: mongo
+    image: mongo:3.0
 # Full-text search & analytics DB
 elastic:
     image: elasticsearch:1.7.3
 
 # Kafka (A scalable queue) + Zookeeper (Distributed conf. service)
+# as of 2015.11 -- kafka:0.8.2, zookeeper:3.4.5+dfsg-2
 kzk:
     image: spotify/kafka
 
 # nimbus: supervises everything; talks to zookeeper
+# in e-ucm/dockerized-storm -- storm:0.9.5
 nimbus:
     image: eucm/storm-nimbus
     ports:
@@ -25,6 +27,7 @@ nimbus:
         - kzk
 
 # ui: allows access to logs
+# in e-ucm/dockerized-storm -- storm:0.9.5
 ui:
     image: eucm/storm-ui
     ports: 
@@ -34,6 +37,7 @@ ui:
         - kzk 
 
 # supervisor: supervises actual workers
+# in e-ucm/dockerized-storm -- storm:0.9.5
 supervisor:
     image: eucm/storm-supervisor
     links:
