@@ -11,7 +11,7 @@ We rely on [docker](https://docs.docker.com/installation/) to modularize and sim
 ## Simple usage
 
 0. Open a shell in a recent linux (we use Ubuntu 14.04+). You must be root (`sudo su -`) unless you already have `docker` running and a compatible version of `docker-compose` installed 
-1. `wget -O - https://raw.githubusercontent.com/e-ucm/rage-analytics/master/launch-all.sh | /bin/bash`
+1. `wget -O - https://raw.githubusercontent.com/e-ucm/rage-analytics/master/rage-analytics.sh | /bin/bash -s launch`
 2. follow the instructions in the [Quickstart guide](https://github.com/e-ucm/rage-analytics/wiki/Quickstart) to learn more 
 
 ... and type `docker-compose ps` to check that everything has been launched. Expected output:
@@ -48,22 +48,17 @@ Exposed ports can be easily altered by modifying `docker-compose.yml` (eg.: chan
 
 ## Under the hood
 
-Timing delays in `launch_all.sh` have been tested in a system with an SSD (=fast) hard disk and 8 GB RAM. You may need to increase these delays in slower systems.
+Timing delays in `rage-analytics.sh` have been tested in a system with an SSD (=fast) hard disk and 8 GB RAM. You may need to increase these delays in slower systems.
 
 To rebuild a particular image, checkout the images' source with git, change whatever files you fancy, and then,
 
-1. stop the service if it is runing via `docker-compose kill <service-name>`
-2. rebuild the image, and tag it as the service you are replacing via `docker build -t <image-tag> <dockerfile-location>`
-3. relaunch the service via `docker-compose up <service-name>`
+1. rebuild the image, and tag it as the service you are replacing via `docker build -t <image-tag> <dockerfile-location>`
+2. relaunch all services via `./rage-analytics.sh restart`
 
 Example: the following statements would rebuild `rage-analytics-backend`
 ```
   git clone https://github.com/e-ucm/rage-analytics-backend
   # ... change stuff
-  docker-compose kill back
-  docker-compose rm back 
   docker build -t eucm/rage-analytics-backend rage-analytics-backend
-  docker-compose up back
+  ./rage-analytics.sh restart
 ```
-
-Notice that, by killing a container, you only stop it; it will be restarted again (and not launched-from-latest-image) unless you actually remove it (via `docker-compose rm`).
