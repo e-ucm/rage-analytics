@@ -39,6 +39,7 @@ supervisor:
     links:
         - nimbus
         - kzk
+        - mongo
 
 # OpenLRS, an open LRS that speaks xAPI
 lrs:
