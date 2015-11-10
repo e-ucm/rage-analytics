@@ -30,7 +30,9 @@ cat << EOF
     stop:      Stop and scrub all containers. 
                *Any information stored in these containers will be lost*
     restart:   Stop (as above) and then start again
-
+    launch:    Install (as above), and then start;
+               Useful in shell scripts
+    
   --help    display this help and exit
 EOF
 }
@@ -54,7 +56,9 @@ function main() {
         "stop") \
             check_docker_launched && stop ; stop_docker_if_launched ;;
         "restart") \
-            check_docker_launched && restart;;
+            check_docker_launched && stop ; check_docker_launched && start ;;
+        "launch") \
+            install && start ;;
         "--help") \
             help ;;
         *) echo \
@@ -236,12 +240,6 @@ function stop() {
   else 
      docker rm $STOPPED_CONTAINERS
   fi    
-}
-
-# restart
-function restart() {
-  stop
-  start
 }
 
 # entrypoint
