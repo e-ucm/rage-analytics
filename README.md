@@ -11,8 +11,9 @@ We rely on [docker](https://docs.docker.com/installation/) to modularize and sim
 ## Simple usage
 
 0. Open a shell in a recent linux (we use Ubuntu 14.04+). You must be root (`sudo su -`) unless you already have `docker` running and a compatible version of `docker-compose` installed 
-1. `wget -O - https://raw.githubusercontent.com/e-ucm/rage-analytics/master/rage-analytics.sh | /bin/bash -s launch`
-2. follow the instructions in the [Quickstart guide](https://github.com/e-ucm/rage-analytics/wiki/Quickstart) to learn more 
+1. Download the launch script: `wget https://raw.githubusercontent.com/e-ucm/rage-analytics/master/rage-analytics.sh`
+2. Mark the script as executable, and launch it: `chmod +x rage-analytics.sh && ./rage-analytics.sh launch` (note that it requires `bash` to run). Besides `launch`, the scripts accepts several other commands - use `./rage-analytics.sh --help` to see their names and descriptions.
+3. follow the instructions in the [Quickstart guide](https://github.com/e-ucm/rage-analytics/wiki/Quickstart) to learn more 
 
 ... and type `docker-compose ps` to check that everything has been launched. Expected output:
 
