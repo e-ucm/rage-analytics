@@ -29,6 +29,9 @@ cat << EOF
                time to link to each other                
     stop:      Stop and scrub all containers. 
                *Any information stored in these containers will be lost*
+    report:    Generate a report.txt file suitable for filing an issue.
+               The report will contain all service logs, and essential data
+               on your OS, docker and docker-compose versions.
     restart:   Stop (as above) and then start again
     launch:    Install (as above), and then start;
                Useful in shell scripts
@@ -59,6 +62,8 @@ function main() {
             check_docker_launched && stop ; check_docker_launched && start ;;
         "launch") \
             install && start ;;
+        "report") \
+            report ;;
         "--help") \
             help ;;
         *) echo \
@@ -118,6 +123,57 @@ function version_ge() {
   return 0
 }
 
+# builds a report-file, which can be used to help resolve issues
+function report() {
+  REPORT_FILE="report-$(date -Iminutes | sed -e "s/[:T-]/_/g;s/[+].*//").txt"
+
+  recho "      Generating ${REPORT_FILE}"
+  recho "-------------------------------"
+  
+  recho " ... adding your docker version"
+  echo "[Docker version]" > ${REPORT_FILE}
+  docker -v >> ${REPORT_FILE}
+  
+  recho " ... adding your docker-compose version"
+  echo "[Docker-compose version]" >> ${REPORT_FILE}
+  docker-compose -v >> ${REPORT_FILE}
+  
+  recho " ... adding kernel version and linux distribution string"
+  echo "[Kernel and distro]" >> ${REPORT_FILE}
+  uname -a >> ${REPORT_FILE}
+  cat /etc/lsb-release >> ${REPORT_FILE}
+  
+  recho " ... adding your username and group-names"
+  echo "[Root or docker-group?]" >> ${REPORT_FILE}
+  whoami | grep root >> ${REPORT_FILE}
+  groups | grep docker >> ${REPORT_FILE}
+  
+  recho " ... adding memory, disk space and CPU info"
+  echo "[User and groups]" >> ${REPORT_FILE}
+  free >> ${REPORT_FILE}
+  df -h >> ${REPORT_FILE}
+  cat /proc/cpuinfo >> ${REPORT_FILE}
+    
+  recho " ... adding output of docker-compose ps"
+  echo "[Output of docker-compose ps]" >> ${REPORT_FILE}
+  docker-compose ps >> ${REPORT_FILE}
+  
+  recho " ... adding output of docker-compose logs"
+  echo "[Output of docker-compose logs]" >> ${REPORT_FILE}
+  for SERVICE in $(docker ps -q | xargs) ; do
+    recho " ... including $SERVICE "
+    echo "[service]--------------------------------------" >> ${REPORT_FILE}
+    docker ps | grep $SERVICE >> ${REPORT_FILE}
+    echo "[stats]--------------------------------------" >> ${REPORT_FILE}
+    docker stats --no-stream=true $SERVICE >> ${REPORT_FILE}
+    echo "[logs]--------------------------------------" >> ${REPORT_FILE}
+    ( docker logs $SERVICE 2>&1 ) | sed -e 's/\^M/\n/g' \
+      | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" >> ${REPORT_FILE} 
+  done
+  recho " file issues at https://github.com/e-ucm/rage-analytics/issues"
+  recho " including ${REPORT_FILE} as an attachment"
+}
+
 # installs compose
 function update_compose() {
   if ( version_ge 'docker' '1.7' ) ; then
@@ -136,11 +192,17 @@ function update_compose() {
   fi
 }
 
-# retrieve space-separated image-list from docker-compose.yml file
+# retrieve space-separated list of images from docker-compose.yml file
 function image_list() {
 grep "image:" docker-compose.yml \
     | awk '{print $2, " "}' \
     | xargs
+}
+
+# retrieve space-separated list of containers from docker-compose.yml file
+function service_list() {
+grep -E "^[a-z-]+:" docker-compose.yml \
+    | sed -e "s/://" | xargs
 }
 
 # gets composition file and pulls all images from DockerHub
@@ -228,18 +290,8 @@ function start() {
 function stop() {
   recho "       Stopping containers"
   recho "-------------------------------"
-  RUNNING_CONTAINERS=$(docker ps --filter=[image=rage] -q)
-  if [ -z "$RUNNING_CONTAINERS" ] ; then
-     recho "no running RAGE containers to kill"
-  else 
-     docker kill $RUNNING_CONTAINERS
-  fi  
-  STOPPED_CONTAINERS=$(docker ps -a --filter=[image=rage] -q)
-  if [ -z "$STOPPED_CONTAINERS" ] ; then
-     recho "no stopped RAGE containers to remove"
-  else 
-     docker rm $STOPPED_CONTAINERS
-  fi    
+  docker-compose kill
+  docker-compose rm -f -v
 }
 
 # entrypoint
