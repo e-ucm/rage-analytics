@@ -8,6 +8,19 @@ game analytics for applied games.
 
 We rely on [docker](https://docs.docker.com/installation/) to modularize and simplify deployment; and on [docker-compose](https://docs.docker.com/compose/) to manage and orchestrate (or, dare I say, _compose_) those containers. 
 
+## Hardware and Software Requirements
+
+In theory:
+
+- anywhere with docker v1.7 (or greater) and docker-compose v1.4.2 (or greater) installed 
+- >=12 Gb free HDD space, 8 6 Gb RAM. Note that one of the services, MongoDB, requires 3.4 Gb free HDD space to run.
+
+Our testing environment:
+          
+- ubuntu 14.04 and 14.10 x64, both stand-alone and running in VirtualBox VMs under Windows hosts
+- docker v1.9, docker-compose v1.5
+- >=12 Gb free HDD space, 8 Gb RAM
+
 ## Simple usage
 
 0. Open a shell in a recent linux (we use Ubuntu 14.04+). You must be root (`sudo su -`) unless you already have `docker` running and a compatible version of `docker-compose` installed 
@@ -46,6 +59,16 @@ Other servers, exposed by default but which would be firewalled of in a producti
 * Storm UI at `http://localhost:8081`
 
 Exposed ports can be easily altered by modifying `docker-compose.yml` (eg.: changing the `ui` port to `8081:8082`) would expose `nimbus-ui` in `8082` instead of `8081`.
+
+## Troubleshooting
+
+The `report` command generates a text file with information that can help us diagnose any problems during installation or execution. It does not include any personally-identifiable [information](https://github.com/e-ucm/rage-analytics/blob/master/rage-analytics.sh#L127) (in particular, neither your machine's public IP  nor your username is included; although we do want to know if you are running it as root or using a `docker` group).
+
+When you have a problem,
+
+- run `./rage-analytics.sh report` (_before_ stopping the services)
+- open an issue on our [issues page](https://github.com/e-ucm/rage-analytics/pulls) (if you register as a user on github, you will be e-mailed as soon as we comment on the issue)
+- append the report to your new issue, and described the problem and the steps to reproduce it as accurately as possible. We will get back to you as soon as we can.
 
 ## Under the hood
 
