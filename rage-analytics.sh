@@ -130,20 +130,21 @@ function report() {
   recho "      Generating ${REPORT_FILE}"
   recho "-------------------------------"
   
-  recho " ... adding your docker version"
-  echo "[Docker version]" > ${REPORT_FILE}
+  recho " ... adding your docker and docker-compose versions"
+  echo "[Docker and Docker-compose versions]" > ${REPORT_FILE}
   docker -v >> ${REPORT_FILE}
-  
-  recho " ... adding your docker-compose version"
-  echo "[Docker-compose version]" >> ${REPORT_FILE}
   docker-compose -v >> ${REPORT_FILE}
+  
+  recho " ... adding hashes of this script and the docker-compose.yml file"
+  echo "[Script and .yml versions]" >> ${REPORT_FILE}
+  sha1sum rage-analytics.sh docker-compose.yml >> ${REPORT_FILE}
   
   recho " ... adding kernel version and linux distribution string"
   echo "[Kernel and distro]" >> ${REPORT_FILE}
   uname -a >> ${REPORT_FILE}
   cat /etc/lsb-release >> ${REPORT_FILE}
   
-  recho " ... adding your username and group-names"
+  recho " ... adding partial username / group information"
   echo "[Root or docker-group?]" >> ${REPORT_FILE}
   whoami | grep root >> ${REPORT_FILE}
   groups | grep docker >> ${REPORT_FILE}
