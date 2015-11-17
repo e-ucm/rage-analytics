@@ -1,68 +1,102 @@
 #
 # RAGE WP2 server-side infrastructure
+# This version requires the use of 
+#   docker v1.9+
+#   docker-compose v1.5+, running with --x-experimental-networking
 #
 
 # A fast in-memory store
+#     saves data to ./data/redis
 redis:
     image: redis:3.0
+    container_name: "redis"
+    volumes:
+      - "./data/redis:/data"
+
 # A scalable cache
+#     saves data to ./data/mongo
 mongo:
     image: mongo:3.0
+    container_name: "mongo"
+    volumes:
+      - "./data/mongo:/data/db"
+
 # Full-text search & analytics DB
+#     saves data to ./data/elastic
 elastic:
     image: elasticsearch:1.7.3
+    container_name: "elastic"
+    volumes:
+      - "./data/elastic:/usr/share/elasticsearch/data"
 
 # Kafka (A scalable queue) + Zookeeper (Distributed conf. service)
 # as of 2015.11 -- kafka:0.8.2, zookeeper:3.4.5+dfsg-2
 kzk:
     image: spotify/kafka
+    container_name: "kzk"
+    volumes:
+      - "./data/zookeeper:/var/lib/zookeeper"
+      - "./data/kafka:/tmp/kafka-logs"
 
 # nimbus: supervises everything; talks to zookeeper
 # in e-ucm/dockerized-storm -- storm:0.9.5
+#    requires: kzk
 nimbus:
     image: eucm/storm-nimbus
+    container_name: "nimbus"
+    environment:
+      - KZK_PORT_2181_TCP_ADDR=kzk
+      - NIMBUS_PORT_6627_TCP_ADDR=nimbus
+      - UI_PORT_8081_TCP_ADDR=ui
     ports:
-        - "6627:6627"
-    links:
-        - kzk
+      - "6627:6627"
 
 # ui: allows access to logs
 # in e-ucm/dockerized-storm -- storm:0.9.5
+#    requires: nimbus, kzk
 ui:
     image: eucm/storm-ui
+    container_name: "ui"
+    environment:
+      - KZK_PORT_2181_TCP_ADDR=kzk
+      - NIMBUS_PORT_6627_TCP_ADDR=nimbus
+      - UI_PORT_8081_TCP_ADDR=ui
     ports: 
         - "8081:8081"
-    links: 
-        - nimbus
-        - kzk 
 
 # supervisor: supervises actual workers
 # in e-ucm/dockerized-storm -- storm:0.9.5
+#   requires: nimbus, kzk, mongo
 supervisor:
     image: eucm/storm-supervisor
-    links:
-        - nimbus
-        - kzk
-        - mongo
+    container_name: "supervisor"
+    environment:
+      - KZK_PORT_2181_TCP_ADDR=kzk
+      - NIMBUS_PORT_6627_TCP_ADDR=nimbus
+      - UI_PORT_8081_TCP_ADDR=ui
 
 # OpenLRS, an open LRS that speaks xAPI
+#   requires: elastic, redis
 lrs:
     image: eucm/openlrs
+    container_name: "lrs"
+    environment:
+      - REDIS_PORT_6379_TCP_ADDR=redis
+      - ELASTIC_PORT_9300_TCP=tcp://elastic:9300
     ports:
         - "8080:8080"
-    links:
-        - elastic
-        - redis
 
 # Authentication & Authorization
 # (part of SDA asset: Sever-side Dashboard & Analytics)
+#   requires: redis, mongo
 a2:
     image: eucm/a2
+    container_name: "a2"
+    environment:
+      - REDIS_PORT=tcp://redis:6379
+      - MONGO_PORT=tcp://mongo:27017
     ports: 
-        - "3000:3000"
-    links: 
-        - redis
-        - mongo
+      - "3000:3000"
 
 # Generates RealTime analytics jar, used in Analytics Backend
 realtime:
@@ -70,32 +104,35 @@ realtime:
 
 # Analytics Backend
 # (SISA asset: Server-side Interaction Storage & Analytics)
+#   requires: a2, kzk, lrs, mongo, nimbus
 back:
     image: eucm/rage-analytics-backend
-    ports:
-        - "3300:3300"
-    links:
-        - a2
-        - kzk
-        - lrs
-        - mongo
-        - nimbus
+    container_name: "back"
     volumes_from:
-        - realtime
-        - nimbus
+      - realtime
+      - nimbus
     environment:
-        - RAGE_ANALYTICS_BACKEND_STORMPATH=/app/storm_vol/bin
-        - RAGE_ANALYTICS_BACKEND_REALTIMEJAR=/app/output/realtime-jar-with-dependencies.jar
+      - A2_PORT=tcp://a2:3000
+      - KZK_PORT=tcp://kzk:2181
+      - LRS_PORT=tcp://lrs:8080
+      - MONGO_PORT=tcp://mongo:27017
+      - NIMBUS_PORT=tcp://nimbus:6627
+      - RAGE_ANALYTICS_BACKEND_STORMPATH=/app/storm_vol/bin
+      - RAGE_ANALYTICS_BACKEND_REALTIMEJAR=/app/output/realtime-jar-with-dependencies.jar
+    ports:
+      - "3300:3300"
 
 # Analytics Frontend
 # (part of SDA asset: Server-side Dashboard and Analytics)
+#   requires: a2, back
 front:
     image: eucm/rage-analytics-frontend
+    container_name: "front"
     ports:
         - "3350:3350"
-    links:
-        - a2
-        - back
+    environment:
+      - A2_PORT=tcp://a2:3000
+      - BACK_PORT=tcp://a2:3300
 
 # LostInSpace, a sample game with tracking enabled
 #   http://<ip>:9090/setup to set it up, and
@@ -104,4 +141,3 @@ lis:
     image: eucm/lostinspace
     ports:
         - "9090:9090"
-

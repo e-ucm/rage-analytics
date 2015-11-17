@@ -1,41 +1,60 @@
 #!/bin/bash
 #
 # This script automates deployment and management of the 
-# RAGE-Analytics system. The latest version is always available at 
+# RAGE-Analytics system.
+# The latest version is always available at 
 # https://github.com/e-ucm/rage-analytics
 # 
 # Copyright (C) 2015 RAGE Project - All Rights Reserved
 # Permission to copy and modify is granted under the Apache License 
 #   (http://www.apache.org/licenses/LICENSE-2.0)
-# Last revised 2015/10/11
+# Last revised 2015/20/11
 
+
+# project-related constants
+PROJECT_NAME='rage-analytics'
+PROJECT_URL="https://github.com/e-ucm/${PROJECT_NAME}"
+PROJECT_RAW_URL="https://raw.githubusercontent.com/e-ucm/${PROJECT_NAME}/"
+PROJECT_ISSUE_URL="https://github.com/e-ucm/${PROJECT_NAME}/issues/"
+# external constants
+MIN_DOCKER_VERSION='1.9'
+MIN_COMPOSE_VERSION='1.5'
+DOCKER_SH_URL='https://get.docker.com/'
+COMPOSE_BASE_URL='https://github.com/docker/compose/releases/download/'
+COMPOSE_INSTALL_TARGET='/usr/local/bin/docker-compose'
+# compose flags
+COMPOSE_UP_WITH_FLAGS="--x-networking up -d --force-recreate --no-deps"
 
 # help contents
 function help() {
 cat << EOF
   Usage: $0 [OPERATION | --help]
-  
-  Manage the RAGE-Analytics system. The system consists of several
-  linked services, provided by docker containers. See 
-  https://github.com/e-ucm/rage-analytics for details.
+
+  Manage the ${PROJECT_NAME} service.
+  The system consists of several linked services, provided by docker containers. 
+  See ${PROJECT_URL} for details.
 
   OPERATION one of the following:
-    
-    install:   Install all requirements (docker, docker-compose) 
-               and download updated versions of all container images    
-    uninstall: Remove all downloaded container images, 
-               freeing disk space
-    start:     Launch all containers by stages, giving them 
-               time to link to each other                
-    stop:      Stop and scrub all containers. 
-               *Any information stored in these containers will be lost*
-    report:    Generate a report.txt file suitable for filing an issue.
-               The report will contain all service logs, and essential data
-               on your OS, docker and docker-compose versions.
-    restart:   Stop (as above) and then start again
-    launch:    Install (as above), and then start;
-               Useful in shell scripts
-    
+
+    install:    Install all requirements (docker, docker-compose) 
+                and download updated versions of all container images    
+    uninstall:  Remove all downloaded container images, 
+                freeing disk space
+    start:      Launch all containers by stages, giving them 
+                time to link to each other
+    launch:     Install (as above), and then start.
+    stop:       Gracefully stop all containers. No data will be lost.
+    restart:    Stop (as above) and then start again
+    report:     Generate a report.txt file suitable for filing an issue.
+                The report will contain all service logs, and essential data
+                on your OS, docker and docker-compose versions.
+    network:    Display current docker-network names and IPs. 
+                Good for general diagnostics.
+    shell <id>: Opens a bash shell into the container with name <id>.
+                Good for debugging. Ids are symbolic (eg.: 'a2' or 'redis')
+    purge:      Kill and remove all data in all containers
+                *Any information stored in these containers will be lost*
+
   --help    display this help and exit
 EOF
 }
@@ -58,12 +77,19 @@ function main() {
             check_docker_launched && start ;;
         "stop") \
             check_docker_launched && stop ; stop_docker_if_launched ;;
+        "purge") \
+            check_docker_launched && purge ; stop_docker_if_launched ;;
         "restart") \
             check_docker_launched && stop ; check_docker_launched && start ;;
         "launch") \
             install && start ;;
         "report") \
             report ;;
+        "network") \
+            check_docker_launched && network ;;
+        "shell") \
+            if ! [ -z $2 ] ; then check_docker_launched && shell_into $2 ; \
+            else echo "  Missing parameter <id> for operation 'shell'" ; fi ;;
         "--help") \
             help ;;
         *) echo \
@@ -137,7 +163,7 @@ function report() {
   
   recho " ... adding hashes of this script and the docker-compose.yml file"
   echo "[Script and .yml versions]" >> ${REPORT_FILE}
-  sha1sum rage-analytics.sh docker-compose.yml >> ${REPORT_FILE}
+  sha1sum rage-*.sh docker-compose.yml >> ${REPORT_FILE}
   
   recho " ... adding kernel version and linux distribution string"
   echo "[Kernel and distro]" >> ${REPORT_FILE}
@@ -171,25 +197,24 @@ function report() {
     ( docker logs $SERVICE 2>&1 ) | sed -e 's/\^M/\n/g' \
       | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" >> ${REPORT_FILE} 
   done
-  recho " file issues at https://github.com/e-ucm/rage-analytics/issues"
+  recho " file issues at ${PROJECT_ISSUE_URL}"
   recho " including ${REPORT_FILE} as an attachment"
 }
 
 # installs compose
 function update_compose() {
-  if ( version_ge 'docker' '1.7' ) ; then
+  if ( version_ge 'docker' ${MIN_DOCKER_VERSION} ) ; then
     require_root
-    curl -sSL https://get.docker.com/ | sh 
+    curl -sSL ${DOCKER_SH_URL} | sh 
     ( docker daemon & )
     sleep 2s
   fi
-  if ( version_ge 'docker-compose' '1.4.2' ) ; then
+  if ( version_ge 'docker-compose' ${MIN_COMPOSE_VERSION} ) ; then
     require_root
-    COMPOSE_URL="https://github.com/docker/compose/releases/download/"
     SUFFIX="$(uname -s)-$(uname -m)"
-    TARGET="/usr/local/bin/docker-compose"
-    curl -L "${COMPOSE_URL}1.4.2/docker-compose-${SUFFIX}" > ${TARGET} \
-        && chmod +x /usr/local/bin/docker-compose
+    curl -L "${COMPOSE_BASE_URL}${MIN_COMPOSE_VERSION}/docker-compose-${SUFFIX}" \
+        > ${COMPOSE_INSTALL_TARGET} \
+        && chmod +x ${COMPOSE_INSTALL_TARGET}
   fi
 }
 
@@ -200,12 +225,6 @@ grep "image:" docker-compose.yml \
     | xargs
 }
 
-# retrieve space-separated list of containers from docker-compose.yml file
-function service_list() {
-grep -E "^[a-z-]+:" docker-compose.yml \
-    | sed -e "s/://" | xargs
-}
-
 # gets composition file and pulls all images from DockerHub
 function get_composition_and_containers() {
   BASE="https://raw.githubusercontent.com/e-ucm/rage-analytics/"
@@ -214,7 +233,7 @@ function get_composition_and_containers() {
   recho "      Downloading images"
   recho "-------------------------------"
   for IMAGE in $(image_list) ; do
-    docker pull $IMAGE
+    docker pull ${IMAGE}
   done
 }
 
@@ -224,9 +243,10 @@ function launch_and_wait() {
   shift
   SERVICES=$@
   recho
-  recho "... launching $SERVICES and waiting $DELAY seconds ..."
+  recho "... launching ${SERVICES} and waiting ${DELAY} seconds ..."
   recho
-  docker-compose up -d --force-recreate --no-deps $SERVICES &
+  echo "docker-compose ${COMPOSE_UP_WITH_FLAGS} ${SERVICES}"
+  docker-compose ${COMPOSE_UP_WITH_FLAGS} ${SERVICES} &
   sleep "${DELAY}s"
 }
 
@@ -264,7 +284,7 @@ function uninstall() {
   stop
   RAGE_IMAGES=$(docker images -q 'eucm/*')
   if [ -z "$RAGE_IMAGES" ] ; then
-  recho "no RAGE images to remove."
+    recho "no RAGE images to remove."
   else 
     recho "       Removing images"
     recho "-------------------------------"
@@ -276,23 +296,108 @@ function uninstall() {
 function start() {
   recho "       Launching images"
   recho "-------------------------------"
-  launch_and_wait 60 redis mongo elastic kzk
-  launch_and_wait 50 nimbus lrs
-  launch_and_wait 5 realtime
-  launch_and_wait 30 a2 supervisor ui
-  launch_and_wait 10 back front lis
+  
+  launch_and_wait 5 mongo redis elastic kzk
+  wait_for_service redis 6379 'Redis'
+  wait_for_service elastic 9300 'ElasticSearch'
+  wait_for_service kzk 9092 'Apache Kafka'
+  wait_for_service kzk 2181 'Apache ZooKeeper'
+  wait_for_service mongo 27017 'MongoDB'
+  
+  launch_and_wait 5 nimbus lrs 
+  wait_for_service nimbus 6627 'Apache Storm - Nimbus'
+  wait_for_service lrs 8080 'Apereo OpenLRS'
+  
+  launch_and_wait 5 a2 supervisor ui
+  wait_for_service a2 3000 'RAGE Authentication & Authorization'
+  # no problem if Storm's supervisor or ui take a bit longer
+  
+  launch_and_wait 5 back front
+  wait_for_service back 3300 'RAGE Analytics Backend'
+  wait_for_service front 3350 'RAGE Analytics Frontend'
+  
   recho ' * use "docker-compose logs <service> to inspect service logs'
   recho ' * use "docker-compose ps" to see status of all services'
   recho 'output of "docker-compose ps" follows:'
   docker-compose ps
 }
 
-# stop & purge containers
+# stop containers
 function stop() {
   recho "       Stopping containers"
   recho "-------------------------------"
+  docker-compose stop
+}
+
+# poll service until connection succeeds
+function wait_for_service() {
+  T=0  
+  docker_map
+  if [ -z ${CONTAINERS[$1]} ] ; then
+      echo -n "Waiting for $1 to get an internal name  ... "
+    until ! [ -z ${CONTAINERS[$1]} ] ; do 
+        sleep 1s
+        echo -n "."
+        docker_map
+        ((T++))
+    done
+  fi
+  
+  SERVICE_IP=$( docker inspect ${CONTAINERS[$1]} \
+    | grep IPAddress | grep -oE '([0-9]{1,3}[.]*){4}' )
+  echo -n "Waiting for $1 to be up at ${SERVICE_IP}:$2 ... "
+  until netcat -z ${SERVICE_IP} $2 ; do
+      sleep 1s
+      echo -n "."
+      ((T++))
+  done
+  echo -e "\n OK - $1:$2 ($3) reachable after ${T}s"
+}
+
+# map internal docker hashes to container-names and vice-versa
+function docker_map() {
+  declare -g -A CONTAINERS
+  while read -r LINE ; do
+    NAME=${LINE##* }
+    HASH=${LINE%% *}
+    XHASH="x${HASH}"
+    CONTAINERS[$XHASH]=$NAME
+    CONTAINERS[$NAME]=$HASH
+  done < <( docker ps | tail -n +2 | sed -e 's:   .*   : :g' )
+}
+
+# display networking info
+function network() {
+  recho "       Displaying network information"
+  recho "-------------------------------"
+  docker_map  
+  while read -r LINE ; do
+    LONG_HASH=${LINE%% *}
+    HASH="x${LONG_HASH:0:12}"
+    echo ${LINE} | sed -e "s/[a-f0-9]*/${CONTAINERS[$HASH]}/"
+  done < <( docker network inspect $(basename $(pwd) | sed -e "s:[_ -]*::g") \
+    | grep -E '([a-f0-9]+["]: {$)|(IPv4)' \
+    | xargs -n 4 | sed -e 's/:.*: / /;s:/.*,::' \
+  )
+}
+
+# entering into shell for a given container name
+function shell_into() {
+  recho "       Displaying bash shell for $1"
+  recho "-------------------------------"
+  docker_map  
+  docker exec -it ${CONTAINERS[$1]} /bin/bash
+}
+
+# stop & purge containers
+function purge() {
+  recho "       Purging containers"
+  recho "-------------------------------"
   docker-compose kill
   docker-compose rm -f -v
+  recho "(you may need root permissions to empty the data volume)"
+  sudo rm -r data/* \
+    && recho "data volume emptied"
 }
 
 # entrypoint
