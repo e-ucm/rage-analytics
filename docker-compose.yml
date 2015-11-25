@@ -84,7 +84,7 @@ lrs:
       - REDIS_PORT_6379_TCP_ADDR=redis
       - ELASTIC_PORT_9300_TCP=tcp://elastic:9300
     ports:
-        - "8080:8080"
+        - "8180:8080"
 
 # Authentication & Authorization
 # (part of SDA asset: Sever-side Dashboard & Analytics)
@@ -112,6 +112,7 @@ back:
       - realtime
       - nimbus
     environment:
+      - MY_HOST=back
       - A2_PORT=tcp://a2:3000
       - KZK_PORT=tcp://kzk:2181
       - LRS_PORT=tcp://lrs:8080
@@ -124,7 +125,8 @@ back:
 
 # Analytics Frontend
 # (part of SDA asset: Server-side Dashboard and Analytics)
-#   requires: a2, back
+#   requires: a2, back (accessed via a2)
+#   NOTE - a2 is assumed to be exposed at the same external IP used by front
 front:
     image: eucm/rage-analytics-frontend
     container_name: "front"
@@ -132,7 +134,6 @@ front:
         - "3350:3350"
     environment:
       - A2_PORT=tcp://a2:3000
-      - BACK_PORT=tcp://a2:3300
 
 # LostInSpace, a sample game with tracking enabled
 #   http://<ip>:9090/setup to set it up, and
