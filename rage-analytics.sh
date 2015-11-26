@@ -19,6 +19,7 @@ COMPOSE_NET_NAME='rage'
 # external constants
 MIN_DOCKER_VERSION='1.9'
 MIN_COMPOSE_VERSION='1.5'
+INSTALL_COMPOSE_VERSION='1.5.1'
 DOCKER_SH_URL='https://get.docker.com/'
 COMPOSE_BASE_URL='https://github.com/docker/compose/releases/download/'
 COMPOSE_INSTALL_TARGET='/usr/local/bin/docker-compose'
@@ -180,13 +181,13 @@ function update_compose() {
   if ( version_ge 'docker' ${MIN_DOCKER_VERSION} ) ; then
     require_root
     curl -sSL ${DOCKER_SH_URL} | sh 
-    ( docker daemon & )
+    ( docker daemon > docker-log.txt & )
     sleep 2s
   fi
   if ( version_ge 'docker-compose' ${MIN_COMPOSE_VERSION} ) ; then
     require_root
     SUFFIX="$(uname -s)-$(uname -m)"
-    curl -L "${COMPOSE_BASE_URL}${MIN_COMPOSE_VERSION}/docker-compose-${SUFFIX}" \
+    curl -L "${COMPOSE_BASE_URL}${INSTALL_COMPOSE_VERSION}/docker-compose-${SUFFIX}" \
         > ${COMPOSE_INSTALL_TARGET} \
         && chmod +x ${COMPOSE_INSTALL_TARGET}
   fi
@@ -217,7 +218,7 @@ function launch_and_wait() {
   recho
   recho "... launching ${SERVICES} and waiting ${DELAY} seconds ..."
   recho
-  show_and_do ${COMPOSE_COMMAND} up ${COMPOSE_UP_FLAGS} ${SERVICES} &
+  show_and_do ${COMPOSE_COMMAND} up ${COMPOSE_UP_FLAGS} ${SERVICES}
   sleep "${DELAY}s"
 }
 
@@ -290,6 +291,9 @@ function start() {
   recho "       Launching images"
   recho "-------------------------------"
   
+  # ensure data-dirs exist; 'purge' may have removed them
+  mkdir -p data/{elastic,kafka,mongo,redis,zookeeper} >/dev/null 2>&1
+  
   launch_and_wait 5 mongo redis elastic kzk realtime
   wait_for_service redis 6379 'Redis'
   wait_for_service elastic 9300 'ElasticSearch'
@@ -310,8 +314,8 @@ function start() {
   wait_for_service front 3350 'RAGE Analytics Frontend'
   
   recho " * use '$0 logs <service>' to inspect service logs"
-  recho " * use '$0 ps' to see status of all services"
-  recho "output of '$0 ps' follows:"
+  recho " * use '$0 status' to see status of all services"
+  recho "output of '$0 status' follows:"
   display_status
 }
 
