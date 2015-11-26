@@ -383,7 +383,7 @@ function shell_into() {
 function start_ids() {
   recho "       Starting containers: $@"
   recho "-------------------------------"
-  show_and_do ${COMPOSE_COMMAND} start $@
+  show_and_do ${COMPOSE_COMMAND} up ${COMPOSE_UP_FLAGS} $@
 }
 
 # stop containers by id
