@@ -28,41 +28,39 @@ Our testing environment:
 2. Mark the script as executable, and launch it: `chmod +x rage-analytics.sh && ./rage-analytics.sh launch` (note that it requires `bash` to run). Besides `launch`, the scripts accepts several other commands - use `./rage-analytics.sh --help` to see their names and descriptions.
 3. follow the instructions in the [Quickstart guide](https://github.com/e-ucm/rage-analytics/wiki/Quickstart) to learn more 
 
-... and type `docker-compose ps` to check that everything has been launched. Expected output:
+... and type `./rage-analytics status` to check that everything has been launched. Expected output:
 
 ```
-           Name                         Command               State                    Ports                  
--------------------------------------------------------------------------------------------------------------
-rageanalytics_a2_1           npm run docker-start             Up       0.0.0.0:3000->3000/tcp                 
-rageanalytics_back_1         npm run docker-start             Up       0.0.0.0:3300->3300/tcp                 
-rageanalytics_elastic_1      /docker-entrypoint.sh elas ...   Up       9200/tcp, 9300/tcp                     
-rageanalytics_front_1        npm run docker-start             Up       0.0.0.0:3350->3350/tcp                 
-rageanalytics_kzk_1          supervisord -n                   Up       2181/tcp, 9092/tcp                     
-rageanalytics_lis_1          mvn -Djetty.port=9090 inst ...   Up       0.0.0.0:9090->9090/tcp                 
-rageanalytics_lrs_1          ./run.sh                         Up       0.0.0.0:8080->8080/tcp                 
-rageanalytics_mongo_1        /entrypoint.sh mongod            Up       27017/tcp                              
-rageanalytics_nimbus_1       /bin/sh -c ./goStorm.sh nimbus   Up       0.0.0.0:6627->6627/tcp                 
-rageanalytics_realtime_1     /bin/sh -c cp ${OUTPUT_JAR ...   Exit 0                                          
-rageanalytics_redis_1        /entrypoint.sh redis-server      Up       6379/tcp                               
-rageanalytics_supervisor_1   /bin/sh -c ./goStorm.sh su ...   Up       6700/tcp, 6701/tcp, 6702/tcp, 6703/tcp 
-rageanalytics_ui_1           /bin/sh -c ./goStorm.sh ui       Up       0.0.0.0:8081->8081/tcp 
+     Name                    Command               State                    Ports                  
+--------------------------------------------------------------------------------------------------
+a2                npm run docker-start             Up       0.0.0.0:3000->3000/tcp                 
+back              npm run docker-start             Up       0.0.0.0:3300->3300/tcp                 
+elastic           /docker-entrypoint.sh elas ...   Up       9200/tcp, 9300/tcp                     
+front             npm run docker-start             Up       0.0.0.0:3350->3350/tcp                 
+kzk               supervisord -n                   Up       2181/tcp, 9092/tcp                     
+lrs               ./run.sh                         Up       0.0.0.0:8180->8080/tcp                 
+mongo             /entrypoint.sh mongod            Up       27017/tcp                              
+nimbus            /bin/sh -c ./goStorm.sh nimbus   Up       0.0.0.0:6627->6627/tcp                 
+rage_realtime_1   /bin/sh -c cp ${OUTPUT_JAR ...   Exit 0                                          
+redis             /entrypoint.sh redis-server      Up       6379/tcp                               
+supervisor        /bin/sh -c ./goStorm.sh su ...   Up       6700/tcp, 6701/tcp, 6702/tcp, 6703/tcp 
+ui                /bin/sh -c ./goStorm.sh ui       Up       0.0.0.0:8081->8081/tcp   
 ```
 
 The following services will be launched:
-* `a2` at `http://localhost:3000`: running [Authentication&Authorization](https://github.com/e-ucm/a2) server. Allows registering server-side applications (such as the `rage-analytics-backend`) 
-* `back` at `http://localhost:3300`: the [Analytics Back-end](https://github.com/e-ucm/rage-analytics-backend) server. Previously known as Gleaner-backend
-* `front` at `http://localhost:3350`: the [Analytics Front-end](https://github.com/e-ucm/rage-analytics-frontend) server. Previously known as Gleaner-frontend
-* `lis` at `http://localhost:9090/setup`: the [Lost In Space](https://github.com/e-ucm/lostinspace) server; creates analytics-enabled versions of the [LostInSpace](https://github.com/anserran/lostinspace) educational game.
+* `a2` at `http://your-ip:3000`: running [Authentication&Authorization](https://github.com/e-ucm/a2) server. Allows registering server-side applications (such as the `rage-analytics-backend`) 
+* `back` at `http://your-ip:3300`: the [Analytics Back-end](https://github.com/e-ucm/rage-analytics-backend) server. Previously known as Gleaner-backend
+* `front` at `http://your-ip:3350`: the [Analytics Front-end](https://github.com/e-ucm/rage-analytics-frontend) server. Previously known as Gleaner-frontend
 
 Other servers, exposed by default but which would be firewalled of in a production deployment, include
-* OpenLRS at `http://localhost:8080`
-* Storm UI at `http://localhost:8081`
+* OpenLRS at `http://your-ip:8180`
+* Storm UI at `http://your-ip:8081`
 
-Exposed ports can be easily altered by modifying `docker-compose.yml` (eg.: changing the `ui` port to `8081:8082`) would expose `nimbus-ui` in `8082` instead of `8081`.
+Exposed ports can be easily altered by modifying `docker-compose.yml` (eg.: changing the `ui` port to `8082:8081`) would expose `nimbus-ui` in `8082` instead of its currently exposed port, `8081`.
 
 ## Troubleshooting
 
-The `report` command generates a text file with information that can help us diagnose any problems during installation or execution. It does not include any personally-identifiable [information](https://github.com/e-ucm/rage-analytics/blob/master/rage-analytics.sh#L127) (in particular, neither your machine's public IP  nor your username is included; although we do want to know if you are running it as root or using a `docker` group).
+The `report` command generates a text file with information that can help us diagnose any problems during installation or execution. It does not include any personally-identifiable [information](https://github.com/e-ucm/rage-analytics/blob/master/rage-analytics.sh) (in particular, neither your machine's public IP  nor your username is included; although we do want to know if you are running it as root or using a `docker` group).
 
 When you have a problem,
 
@@ -72,12 +70,11 @@ When you have a problem,
 
 ## Under the hood
 
-Timing delays in `rage-analytics.sh` have been tested in a system with an SSD (=fast) hard disk and 8 GB RAM. You may need to increase these delays in slower systems.
-
 To rebuild a particular image, checkout the images' source with git, change whatever files you fancy, and then,
 
 1. rebuild the image, and tag it as the service you are replacing via `docker build -t <image-tag> <dockerfile-location>`
-2. relaunch all services via `./rage-analytics.sh restart`
+2. stop the affected service: `./rage-analytics.sh stop <id>` 
+3. start the affected service, using the new version: `./rage-analytics.sh start <id>` 
 
 Example: the following statements would rebuild `rage-analytics-backend`
 ```
