@@ -181,7 +181,7 @@ function update_compose() {
   if ( version_ge 'docker' ${MIN_DOCKER_VERSION} ) ; then
     require_root
     curl -sSL ${DOCKER_SH_URL} | sh 
-    ( docker daemon > docker-log.txt & )
+    docker daemon >docker-log.txt 2>&1 &
     sleep 2s
   fi
   if ( version_ge 'docker-compose' ${MIN_COMPOSE_VERSION} ) ; then
@@ -249,8 +249,8 @@ function check_docker_launched() {
     DOCKER_WAS_RUNNING=1
   else 
     recho "docker not running; attempting to launch it ..."
-    require_root
-    ( docker daemon & )
+    require_root    
+    docker daemon >docker-log.txt 2>&1 &
     sleep 2s
   fi
 }
