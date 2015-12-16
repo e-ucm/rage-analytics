@@ -19,7 +19,7 @@ COMPOSE_NET_NAME='rage'
 # external constants
 MIN_DOCKER_VERSION='1.9'
 MIN_COMPOSE_VERSION='1.5'
-INSTALL_COMPOSE_VERSION='1.5.1'
+INSTALL_COMPOSE_VERSION='1.5.0'
 DOCKER_SH_URL='https://get.docker.com/'
 COMPOSE_BASE_URL='https://github.com/docker/compose/releases/download/'
 COMPOSE_INSTALL_TARGET='/usr/local/bin/docker-compose'
@@ -288,6 +288,15 @@ function install() {
 
 # start containers
 function start() {
+ 
+  composeVersion=$(docker-compose -v)
+  IFS=', ' read -r -a array <<< "$composeVersion"
+
+  if [[ "${array[2]}" != "$INSTALL_COMPOSE_VERSION" ]] ; then
+      echo "  docker-compose version $INSTALL_COMPOSE_VERSION required, available ${array[2]}"
+      exit 0
+  fi
+
   recho "       Launching images"
   recho "-------------------------------"
   
