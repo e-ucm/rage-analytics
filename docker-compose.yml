@@ -133,6 +133,7 @@ front:
     ports:
         - "3350:3350"
     environment:
+      - MY_HOST=front
       - A2_PORT=tcp://a2:3000
 
 # LostInSpace, a sample game with tracking enabled

@@ -21,6 +21,7 @@ MIN_DOCKER_VERSION='1.9'
 MIN_COMPOSE_VERSION='1.5'
 INSTALL_COMPOSE_VERSION='1.5.0'
 DOCKER_SH_URL='https://get.docker.com/'
+DOCKER_CMD='docker'
 COMPOSE_BASE_URL='https://github.com/docker/compose/releases/download/'
 COMPOSE_INSTALL_TARGET='/usr/local/bin/docker-compose'
 # compose settings
@@ -385,7 +386,7 @@ function display_logs() {
 function shell_into() {
   recho "       Displaying bash shell for $1 (enter 'exit' to exit)"
   recho "-------------------------------"
-  show_and_do ${DOCKER_CMD} exec -it ${CONTAINERS[$1]} /bin/bash
+  show_and_do ${DOCKER_CMD} exec -it $1 /bin/bash
 }
 
 # start containers by id
