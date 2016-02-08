@@ -136,6 +136,19 @@ front:
       - MY_HOST=front
       - A2_PORT=tcp://a2:3000
 
+# Game Storage Server
+# (SIS asset: Server-side Interaction Storage)
+#   requires: a2, mongo
+gamestorage:
+    image: eucm/rage-gamestorage-server:1.0.1
+    container_name: "gamestorage"
+    environment:
+      - MY_HOST=gamestorage
+      - A2_PORT=tcp://a2:3000
+      - MONGO_PORT=tcp://mongo:27017
+    ports:
+      - "3400:3400"
+
 # LostInSpace, a sample game with tracking enabled
 #   http://<ip>:9090/setup to set it up, and
 #   http://<ip>:9090/1 to access the 1st game (and so on)

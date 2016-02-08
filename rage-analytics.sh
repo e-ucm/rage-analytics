@@ -319,9 +319,10 @@ function start() {
   wait_for_service a2 3000 'RAGE Authentication & Authorization'
   # no problem if Storm's supervisor or ui take a bit longer
   
-  launch_and_wait 5 back front
+  launch_and_wait 5 back front gamestorage
   wait_for_service back 3300 'RAGE Analytics Backend'
   wait_for_service front 3350 'RAGE Analytics Frontend'
+  wait_for_service gamestorage 3400 'RAGE Game Storage Server'
   
   recho " * use '$0 logs <service>' to inspect service logs"
   recho " * use '$0 status' to see status of all services"
