@@ -67,7 +67,7 @@ When you have a problem,
 
 - run `./rage-analytics.sh report` (_before_ stopping the services)
 - open an issue on our [issues page](https://github.com/e-ucm/rage-analytics/pulls) (if you register as a user on github, you will be e-mailed as soon as we comment on the issue)
-- append the report to your new issue, and described the problem and the steps to reproduce it as accurately as possible. We will get back to you as soon as we can.
+- append the report to your new issue, describe the problem and the steps to reproduce it as accurately as possible. We will get back to you as soon as we can.
 
 ## Under the hood
 
