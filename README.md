@@ -13,7 +13,7 @@ We rely on [docker](https://docs.docker.com/installation/) to modularize and sim
 In theory:
 
 - anywhere with docker v1.7 (or greater) and docker-compose v1.4.2 (or greater) installed 
-- >=12 Gb free HDD space, 8 6 Gb RAM. Note that one of the services, MongoDB, requires 3.4 Gb free HDD space to run.
+- >=12 Gb free HDD space, 4 Gb RAM. Note that one of the services, MongoDB, requires 3.4 Gb free HDD space to run.
 
 Our testing environment:
           
