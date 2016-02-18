@@ -37,6 +37,7 @@ a2                npm run docker-start             Up       0.0.0.0:3000->3000/t
 back              npm run docker-start             Up       0.0.0.0:3300->3300/tcp                 
 elastic           /docker-entrypoint.sh elas ...   Up       9200/tcp, 9300/tcp                     
 front             npm run docker-start             Up       0.0.0.0:3350->3350/tcp                 
+gamestorage       npm run docker-start             Up       0.0.0.0:3400->3400/tcp                 
 kzk               supervisord -n                   Up       2181/tcp, 9092/tcp                     
 lrs               ./run.sh                         Up       0.0.0.0:8180->8080/tcp                 
 mongo             /entrypoint.sh mongod            Up       27017/tcp                              
@@ -44,7 +45,7 @@ nimbus            /bin/sh -c ./goStorm.sh nimbus   Up       0.0.0.0:6627->6627/t
 rage_realtime_1   /bin/sh -c cp ${OUTPUT_JAR ...   Exit 0                                          
 redis             /entrypoint.sh redis-server      Up       6379/tcp                               
 supervisor        /bin/sh -c ./goStorm.sh su ...   Up       6700/tcp, 6701/tcp, 6702/tcp, 6703/tcp 
-ui                /bin/sh -c ./goStorm.sh ui       Up       0.0.0.0:8081->8081/tcp   
+ui                /bin/sh -c ./goStorm.sh ui       Up       0.0.0.0:8081->8081/tcp 
 ```
 
 The following services will be launched:
