@@ -30,7 +30,7 @@ elastic:
       - "./data/elastic:/usr/share/elasticsearch/data"
 
 # Kafka (A scalable queue) + Zookeeper (Distributed conf. service)
-# as of 2015.11 -- kafka:0.8.2, zookeeper:3.4.5+dfsg-2
+# as of 2015.11 -- kafka:0.8.2.1, zookeeper:3.4.5+dfsg-2
 kzk:
     image: spotify/kafka
     container_name: "kzk"
@@ -39,7 +39,7 @@ kzk:
       - "./data/kafka:/tmp/kafka-logs"
 
 # nimbus: supervises everything; talks to zookeeper
-# in e-ucm/dockerized-storm -- storm:0.9.5
+# in e-ucm/dockerized-storm -- storm:0.10.0
 #    requires: kzk
 nimbus:
     image: eucm/storm-nimbus
@@ -52,7 +52,7 @@ nimbus:
       - "6627:6627"
 
 # ui: allows access to logs
-# in e-ucm/dockerized-storm -- storm:0.9.5
+# in e-ucm/dockerized-storm -- storm:0.10.0
 #    requires: nimbus, kzk
 ui:
     image: eucm/storm-ui
@@ -65,7 +65,7 @@ ui:
         - "8081:8081"
 
 # supervisor: supervises actual workers
-# in e-ucm/dockerized-storm -- storm:0.9.5
+# in e-ucm/dockerized-storm -- storm:0.10.0
 #   requires: nimbus, kzk, mongo
 supervisor:
     image: eucm/storm-supervisor
