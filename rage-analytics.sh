@@ -66,6 +66,12 @@ cat << EOF
     report:      Generate a report.txt file suitable for filing an issue;
                  the report will contain logs and information on your machine.
 
+        OPTIONS:
+
+
+        -x, --nginx     Execute nginx
+                                        Usage: start [-x]
+
   --help    display this help and exit
 EOF
 }
@@ -323,6 +329,10 @@ function start() {
   wait_for_service back 3300 'RAGE Analytics Backend'
   wait_for_service front 3350 'RAGE Analytics Frontend'
   wait_for_service gamestorage 3400 'RAGE Game Storage Server'
+
+  if [[ $3 == "-x" || $3 == "--nginx" ]] ; then
+    launch_and_wait 1 nginx
+  fi
   
   recho " * use '$0 logs <service>' to inspect service logs"
   recho " * use '$0 status' to see status of all services"
