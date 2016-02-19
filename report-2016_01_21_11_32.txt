@@ -1,0 +1,797 @@
+[Docker and Docker-compose versions]
+Docker version 1.9.1, build a34a1d5
+docker-compose version: 1.5.0
+[Script and .yml versions]
+14178c88e1b788d890fbcedfae84b9933711000f  rage-anal.sh
+30d55cde6c9d64f76dce655ffc9829725b6bbc98  rage-analytics2.sh
+5b4174be66492ffabff32efd8fc67367b972e104  rage-analytics.sh
+53ae38d64810a18875031778bfda3910fb99dabc  docker-compose.yml
+[Contents of docker-compose.yml]
+#
+# RAGE WP2 server-side infrastructure
+# This version requires the use of 
+#   docker v1.9+
+#   docker-compose v1.5+, running with --x-experimental-networking
+#
+
+# A fast in-memory store
+#     saves data to ./data/redis
+redis:
+    image: redis:3.0
+    container_name: "redis"
+    volumes:
+      - "./data/redis:/data"
+
+# A scalable cache
+#     saves data to ./data/mongo
+mongo:
+    image: mongo:3.0
+    container_name: "mongo"
+    volumes:
+      - "./data/mongo:/data/db"
+
+# Full-text search & analytics DB
+#     saves data to ./data/elastic
+elastic:
+    image: elasticsearch:1.7.3
+    container_name: "elastic"
+    volumes:
+      - "./data/elastic:/usr/share/elasticsearch/data"
+
+# Kafka (A scalable queue) + Zookeeper (Distributed conf. service)
+# as of 2015.11 -- kafka:0.8.2, zookeeper:3.4.5+dfsg-2
+kzk:
+    image: spotify/kafka
+    container_name: "kzk"
+    volumes:
+      - "./data/zookeeper:/var/lib/zookeeper"
+      - "./data/kafka:/tmp/kafka-logs"
+
+# nimbus: supervises everything; talks to zookeeper
+# in e-ucm/dockerized-storm -- storm:0.9.5
+#    requires: kzk
+nimbus:
+    image: eucm/storm-nimbus
+    container_name: "nimbus"
+    environment:
+      - KZK_PORT_2181_TCP_ADDR=kzk
+      - NIMBUS_PORT_6627_TCP_ADDR=nimbus
+      - UI_PORT_8081_TCP_ADDR=ui
+    ports:
+      - "6627:6627"
+
+# ui: allows access to logs
+# in e-ucm/dockerized-storm -- storm:0.9.5
+#    requires: nimbus, kzk
+ui:
+    image: eucm/storm-ui
+    container_name: "ui"
+    environment:
+      - KZK_PORT_2181_TCP_ADDR=kzk
+      - NIMBUS_PORT_6627_TCP_ADDR=nimbus
+      - UI_PORT_8081_TCP_ADDR=ui
+    ports: 
+        - "8081:8081"
+
+# supervisor: supervises actual workers
+# in e-ucm/dockerized-storm -- storm:0.9.5
+#   requires: nimbus, kzk, mongo
+supervisor:
+    image: eucm/storm-supervisor
+    container_name: "supervisor"
+    environment:
+      - KZK_PORT_2181_TCP_ADDR=kzk
+      - NIMBUS_PORT_6627_TCP_ADDR=nimbus
+      - UI_PORT_8081_TCP_ADDR=ui
+
+# OpenLRS, an open LRS that speaks xAPI
+#   requires: elastic, redis
+lrs:
+    image: eucm/openlrs
+    container_name: "lrs"
+    environment:
+      - REDIS_PORT_6379_TCP_ADDR=redis
+      - ELASTIC_PORT_9300_TCP=tcp://elastic:9300
+    ports:
+        - "8180:8080"
+
+# Authentication & Authorization
+# (part of SDA asset: Sever-side Dashboard & Analytics)
+#   requires: redis, mongo
+a2:
+    image: eucm/a2
+    container_name: "a2"
+    environment:
+      - REDIS_PORT=tcp://redis:6379
+      - MONGO_PORT=tcp://mongo:27017
+    ports: 
+      - "3000:3000"
+
+# Generates RealTime analytics jar, used in Analytics Backend
+realtime:
+    image: eucm/rage-analytics-realtime
+
+# Analytics Backend
+# (SISA asset: Server-side Interaction Storage & Analytics)
+#   requires: a2, kzk, lrs, mongo, nimbus
+back:
+    image: eucm/rage-analytics-backend
+    container_name: "back"
+    volumes_from:
+      - realtime
+      - nimbus
+    environment:
+      - MY_HOST=back
+      - A2_PORT=tcp://a2:3000
+      - KZK_PORT=tcp://kzk:2181
+      - LRS_PORT=tcp://lrs:8080
+      - MONGO_PORT=tcp://mongo:27017
+      - NIMBUS_PORT=tcp://nimbus:6627
+      - RAGE_ANALYTICS_BACKEND_STORMPATH=/app/storm_vol/bin
+      - RAGE_ANALYTICS_BACKEND_REALTIMEJAR=/app/output/realtime-jar-with-dependencies.jar
+    ports:
+      - "3300:3300"
+
+# Analytics Frontend
+# (part of SDA asset: Server-side Dashboard and Analytics)
+#   requires: a2, back (accessed via a2)
+#   NOTE - a2 is assumed to be exposed at the same external IP used by front
+front:
+    image: eucm/rage-analytics-frontend
+    container_name: "front"
+    ports:
+        - "3350:3350"
+    environment:
+      - A2_PORT=tcp://a2:3000
+
+# LostInSpace, a sample game with tracking enabled
+#   http://<ip>:9090/setup to set it up, and
+#   http://<ip>:9090/1 to access the 1st game (and so on)
+lis:
+    image: eucm/lostinspace
+    ports:
+        - "9090:9090"
+
+# Nginx
+nginx:
+    image: eucm/nginx-ssl-proxy
+    container_name: "nginx"
+    volumes:
+      - "/etc/letsencrypt/live/rage.e-ucm.es/fullchain.pem:/etc/secrets/proxycert"
+      - "/etc/letsencrypt/live/rage.e-ucm.es/privkey.pem:/etc/secrets/proxykey"
+      - "/etc/letsencrypt/live/rage.e-ucm.es/dh2048.pem:/etc/secrets/dhparam"
+    environment:
+      - ENABLE_SSL=true
+      - ENABLE_BASIC_AUTH=false
+      - TARGET_SERVICE=a2:3000
+    ports:
+      - "80:80"
+      - "443:443"
+[Kernel and distro]
+Linux rage 3.13.0-74-generic #118-Ubuntu SMP Thu Dec 17 22:52:10 UTC 2015 x86_64 x86_64 x86_64 GNU/Linux
+DISTRIB_ID=Ubuntu
+DISTRIB_RELEASE=14.04
+DISTRIB_CODENAME=trusty
+DISTRIB_DESCRIPTION="Ubuntu 14.04.3 LTS"
+[Root or docker-group?]
+root
+[User and groups]
+             total       usado       libre     compart.    búffers     almac.
+Mem:       4048244    2497308    1550936       1560      92604     523328
+-/+ buffers/cache:    1881376    2166868
+Intercambio:    4192252          0    4192252
+S.ficheros     Tamaño Usados  Disp Uso% Montado en
+udev             2,0G   4,0K  2,0G   1% /dev
+tmpfs            396M   420K  395M   1% /run
+/dev/vda1         36G    11G   23G  32% /
+none             4,0K      0  4,0K   0% /sys/fs/cgroup
+none             5,0M      0  5,0M   0% /run/lock
+none             2,0G   1,2M  2,0G   1% /run/shm
+none             100M      0  100M   0% /run/user
+none              36G    11G   23G  32% /var/lib/docker/aufs/mnt/57d65422f4490e3b6db82e6a9fb2eb254546fe1ab6922c1e988d96403c366373
+shm               64M      0   64M   0% /var/lib/docker/containers/57d65422f4490e3b6db82e6a9fb2eb254546fe1ab6922c1e988d96403c366373/shm
+none              36G    11G   23G  32% /var/lib/docker/aufs/mnt/a1588262e389104fb436a38d389fff1c304cb7cfe7dfdc3941b2f6396437aa22
+shm               64M      0   64M   0% /var/lib/docker/containers/a1588262e389104fb436a38d389fff1c304cb7cfe7dfdc3941b2f6396437aa22/shm
+none              36G    11G   23G  32% /var/lib/docker/aufs/mnt/e1f08b9473dd916259524111d1f43f724ed1887067926403c58e21594508123b
+shm               64M      0   64M   0% /var/lib/docker/containers/e1f08b9473dd916259524111d1f43f724ed1887067926403c58e21594508123b/shm
+none              36G    11G   23G  32% /var/lib/docker/aufs/mnt/efd439ed0f8d0578bc56762f83271975ec0127f79fb59b0a3bf1da53947f625b
+shm               64M      0   64M   0% /var/lib/docker/containers/efd439ed0f8d0578bc56762f83271975ec0127f79fb59b0a3bf1da53947f625b/shm
+none              36G    11G   23G  32% /var/lib/docker/aufs/mnt/d96bda05c875507160af7870760c47737fa601d3fcc1413a88c5126e19fef33b
+shm               64M      0   64M   0% /var/lib/docker/containers/d96bda05c875507160af7870760c47737fa601d3fcc1413a88c5126e19fef33b/shm
+none              36G    11G   23G  32% /var/lib/docker/aufs/mnt/99c6272336ed134993ae8cc958865a14b4940e7e4948f429c9c38e35ebc49e44
+shm               64M      0   64M   0% /var/lib/docker/containers/99c6272336ed134993ae8cc958865a14b4940e7e4948f429c9c38e35ebc49e44/shm
+none              36G    11G   23G  32% /var/lib/docker/aufs/mnt/923a8fd0d9539e428019b2b6e53ebf7f6185b41265f484366c934d5f173a9901
+shm               64M      0   64M   0% /var/lib/docker/containers/923a8fd0d9539e428019b2b6e53ebf7f6185b41265f484366c934d5f173a9901/shm
+none              36G    11G   23G  32% /var/lib/docker/aufs/mnt/3f90abe0de9a057ded68869b7d4de823cf99a7d3bae1061f1967137fb08a8669
+shm               64M      0   64M   0% /var/lib/docker/containers/3f90abe0de9a057ded68869b7d4de823cf99a7d3bae1061f1967137fb08a8669/shm
+none              36G    11G   23G  32% /var/lib/docker/aufs/mnt/f96bd2b932616e7d8329091119b040087f4e78772d75257220d2c71e9570e848
+shm               64M      0   64M   0% /var/lib/docker/containers/f96bd2b932616e7d8329091119b040087f4e78772d75257220d2c71e9570e848/shm
+none              36G    11G   23G  32% /var/lib/docker/aufs/mnt/7bd2e322be705b58784813b19d0bbf06501eb1f068eb195667bc123259661a76
+shm               64M      0   64M   0% /var/lib/docker/containers/7bd2e322be705b58784813b19d0bbf06501eb1f068eb195667bc123259661a76/shm
+processor	: 0
+vendor_id	: GenuineIntel
+cpu family	: 6
+model		: 13
+model name	: QEMU Virtual CPU version (cpu64-rhel6)
+stepping	: 3
+microcode	: 0x1
+cpu MHz		: 2199.992
+cache size	: 4096 KB
+physical id	: 0
+siblings	: 1
+core id		: 0
+cpu cores	: 1
+apicid		: 0
+initial apicid	: 0
+fpu		: yes
+fpu_exception	: yes
+cpuid level	: 4
+wp		: yes
+flags		: fpu de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pse36 clflush mmx fxsr sse sse2 syscall nx lm nopl pni cx16 hypervisor lahf_lm
+bogomips	: 4399.98
+clflush size	: 64
+cache_alignment	: 64
+address sizes	: 46 bits physical, 48 bits virtual
+power management:
+
+processor	: 1
+vendor_id	: GenuineIntel
+cpu family	: 6
+model		: 13
+model name	: QEMU Virtual CPU version (cpu64-rhel6)
+stepping	: 3
+microcode	: 0x1
+cpu MHz		: 2199.992
+cache size	: 4096 KB
+physical id	: 1
+siblings	: 1
+core id		: 0
+cpu cores	: 1
+apicid		: 1
+initial apicid	: 1
+fpu		: yes
+fpu_exception	: yes
+cpuid level	: 4
+wp		: yes
+flags		: fpu de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pse36 clflush mmx fxsr sse sse2 syscall nx lm nopl pni cx16 hypervisor lahf_lm
+bogomips	: 4399.98
+clflush size	: 64
+cache_alignment	: 64
+address sizes	: 46 bits physical, 48 bits virtual
+power management:
+
+[Output of docker-compose ps]
+      Name             Command             State              Ports       
+-------------------------------------------------------------------------
+a2                 npm run docker-    Up                 0.0.0.0:3000->30 
+                   start                                 00/tcp           
+back               npm run docker-    Up                 0.0.0.0:3300->33 
+                   start                                 00/tcp           
+elastic            /docker-           Up                 9200/tcp,        
+                   entrypoint.sh                         9300/tcp         
+                   elas ...                                               
+front              npm run docker-    Exit 1                              
+                   start                                                  
+kzk                supervisord -n     Up                 2181/tcp,        
+                                                         9092/tcp         
+lrs                ./run.sh           Up                 0.0.0.0:8180->80 
+                                                         80/tcp           
+mongo              /entrypoint.sh     Up                 27017/tcp        
+                   mongod                                                 
+nimbus             /bin/sh -c         Up                 0.0.0.0:6627->66 
+                   ./goStorm.sh                          27/tcp           
+                   nimbus                                                 
+rage_realtime_1    /bin/sh -c cp      Exit 0                              
+                   ${OUTPUT_JAR ...                                       
+redis              /entrypoint.sh     Up                 6379/tcp         
+                   redis-server                                           
+supervisor         /bin/sh -c         Up                 6700/tcp,        
+                   ./goStorm.sh su                       6701/tcp,        
+                   ...                                   6702/tcp,        
+                                                         6703/tcp         
+ui                 /bin/sh -c         Up                 0.0.0.0:8081->80 
+                   ./goStorm.sh ui                       81/tcp           
+[Output of docker-compose logs]
+[service]--------------------------------------
+7bd2e322be70        eucm/rage-analytics-backend   "npm run docker-start"   10 minutes ago      Up 10 minutes       0.0.0.0:3300->3300/tcp   back
+[stats]--------------------------------------
+CONTAINER           CPU %               MEM USAGE / LIMIT     MEM %               NET I/O              BLOCK I/O
+7bd2e322be70        0.00%               162.6 MB / 4.145 GB   3.92%               9.94 kB / 9.466 kB   29.73 MB / 8.192 kB
+[logs]--------------------------------------
+npm info it worked if it ends with ok
+npm info using npm@2.14.7
+npm info using node@v4.2.1
+npm info predocker-start Rage-Analytics-Backend@0.0.1
+npm info docker-start Rage-Analytics-Backend@0.0.1
+
+> Rage-Analytics-Backend@0.0.1 docker-start /app
+> npm run fast-setup && npm run roles-setup && npm start
+
+npm info it worked if it ends with ok
+npm info using npm@2.14.7
+npm info using node@v4.2.1
+npm info prefast-setup Rage-Analytics-Backend@0.0.1
+npm info fast-setup Rage-Analytics-Backend@0.0.1
+
+> Rage-Analytics-Backend@0.0.1 fast-setup /app
+> NODE_ENV=test ./bin/setup.js
+
+Setup complete.
+npm info postfast-setup Rage-Analytics-Backend@0.0.1
+npm info ok 
+npm info it worked if it ends with ok
+npm info using npm@2.14.7
+npm info using node@v4.2.1
+npm info preroles-setup Rage-Analytics-Backend@0.0.1
+npm info roles-setup Rage-Analytics-Backend@0.0.1
+
+> Rage-Analytics-Backend@0.0.1 roles-setup /app
+> ./bin/setup-roles.js
+
+Application and roles setup complete.
+npm info postroles-setup Rage-Analytics-Backend@0.0.1
+npm info ok 
+npm info it worked if it ends with ok
+npm info using npm@2.14.7
+npm info using node@v4.2.1
+npm info prestart Rage-Analytics-Backend@0.0.1
+npm info start Rage-Analytics-Backend@0.0.1
+
+> Rage-Analytics-Backend@0.0.1 start /app
+> node ./bin/www
+
+Listening on port 3300
+Successfully connected to mongodb://mongo:27017/analytics-backend
+[service]--------------------------------------
+f96bd2b93261        eucm/storm-ui                 "/bin/sh -c './goStor"   10 minutes ago      Up 10 minutes       0.0.0.0:8081->8081/tcp   ui
+[stats]--------------------------------------
+CONTAINER           CPU %               MEM USAGE / LIMIT   MEM %               NET I/O             BLOCK I/O
+f96bd2b93261        0.05%               152 MB / 4.145 GB   3.67%               3.004 kB / 648 B    172 kB / 98.3 kB
+[logs]--------------------------------------
+--- dumping /app/apache-storm-0.9.5/conf/storm.yaml ---
+# created at 2016-01-21 10:21:57+00:00
+ui.port: 8081
+ui.host: 172.18.0.14 	
+storm.zookeeper.servers:
+   - kzk
+storm.local.dir: /app
+nimbus.seeds: [nimbus]
+nimbus.host: nimbus
+--- /app/apache-storm-0.9.5/conf/storm.yaml end ---
+[service]--------------------------------------
+3f90abe0de9a        eucm/a2                       "npm run docker-start"   11 minutes ago      Up 11 minutes       0.0.0.0:3000->3000/tcp   a2
+[stats]--------------------------------------
+CONTAINER           CPU %               MEM USAGE / LIMIT     MEM %               NET I/O               BLOCK I/O
+3f90abe0de9a        0.00%               169.7 MB / 4.145 GB   4.09%               84.51 kB / 79.62 kB   32.12 MB / 8.192 kB
+[logs]--------------------------------------
+npm info it worked if it ends with ok
+npm info using npm@3.3.12
+npm info using node@v5.4.1
+npm info lifecycle Authentication-Authorization-Module@0.0.2~predocker-start: Authentication-Authorization-Module@0.0.2
+npm info lifecycle Authentication-Authorization-Module@0.0.2~docker-start: Authentication-Authorization-Module@0.0.2
+
+> Authentication-Authorization-Module@0.0.2 docker-start /app
+> npm run fast-setup && npm run register-root && npm start
+
+npm info it worked if it ends with ok
+npm info using npm@3.3.12
+npm info using node@v5.4.1
+npm info lifecycle Authentication-Authorization-Module@0.0.2~prefast-setup: Authentication-Authorization-Module@0.0.2
+npm info lifecycle Authentication-Authorization-Module@0.0.2~fast-setup: Authentication-Authorization-Module@0.0.2
+
+> Authentication-Authorization-Module@0.0.2 fast-setup /app
+> SETUP_MODE=fast ./setup.js
+
+Setup complete.
+npm info lifecycle Authentication-Authorization-Module@0.0.2~postfast-setup: Authentication-Authorization-Module@0.0.2
+npm info ok 
+npm info it worked if it ends with ok
+npm info using npm@3.3.12
+npm info using node@v5.4.1
+npm info lifecycle Authentication-Authorization-Module@0.0.2~preregister-root: Authentication-Authorization-Module@0.0.2
+npm info lifecycle Authentication-Authorization-Module@0.0.2~register-root: Authentication-Authorization-Module@0.0.2
+
+> Authentication-Authorization-Module@0.0.2 register-root /app
+> SETUP_MODE=register-root ./setup.js
+
+Root user registered successfully.
+npm info lifecycle Authentication-Authorization-Module@0.0.2~postregister-root: Authentication-Authorization-Module@0.0.2
+npm info ok 
+npm info it worked if it ends with ok
+npm info using npm@3.3.12
+npm info using node@v5.4.1
+npm info lifecycle Authentication-Authorization-Module@0.0.2~prestart: Authentication-Authorization-Module@0.0.2
+npm info lifecycle Authentication-Authorization-Module@0.0.2~start: Authentication-Authorization-Module@0.0.2
+
+> Authentication-Authorization-Module@0.0.2 start /app
+> node ./bin/www
+
+Mongo db Connected!
+Mongoose: users.ensureIndex({ email: 1 }) { unique: true, background: true }  
+Mongoose: applications.ensureIndex({ prefix: 1 }) { unique: true, background: true }  
+Mongoose: users.ensureIndex({ username: 1 }) { unique: true, background: true }  
+Mongoose: applications.ensureIndex({ host: 1 }) { unique: true, background: true }  
+Mongoose: users.ensureIndex({ username: 1 }) { unique: true, background: true }  
+Mongoose: users.ensureIndex({ email: 1 }) { unique: true, background: true }  
+Mongoose: applications.ensureIndex({ prefix: 1 }) { unique: true, background: true }  
+Mongoose: users.findOne({ '$or': [ { username: 'root' } ] }) { fields: {} }  
+POST /api/login 200 1102.618 ms - 313
+-DEBUG-ACL: Requesting post on /api/applications by user root
+-DEBUG-ACL: Allowed post on /api/applications by user root
+Mongoose: applications.findOne({ prefix: 'gleaner' }) { fields: undefined }  
+Mongoose: applications.insert({ name: 'Rage Analytics Backend', prefix: 'gleaner', host: 'http://back:3300/api', owner: 'root', _id: ObjectId("56a0b156a57eeb4400d5c19b"), timeCreated: new Date("Thu, 21 Jan 2016 10:22:14 GMT"), autoroles: [ 'student', 'teacher', 'developer' ], routes: [ 'gleaner/games/public', 'gleaner/games/:gameId/versions', 'gleaner/games/:gameId/versions/:versionId', 'gleaner/games/:gameId/versions/:versionId/sessions/my', 'gleaner/sessions/:sessionId/results', 'gleaner/sessions/:sessionId', 'gleaner/sessions/:sessionId/remove', 'gleaner/sessions/:sessionId/results/:resultsId', 'gleaner/games/:gameId/versions/:versionId/sessions', 'gleaner/sessions/:sessionId/event/:event', 'gleaner/games/my', 'gleaner/games/:gameId', 'gleaner/games' ], anonymous: [ '/games/:id/:versionId', '/collector/start/:trackingCode', '/collector/track' ], __v: 0 })   
+POST /api/applications 200 383.017 ms - 791
+[service]--------------------------------------
+923a8fd0d953        eucm/storm-supervisor         "/bin/sh -c './goStor"   11 minutes ago      Up 11 minutes       6700-6703/tcp            supervisor
+[stats]--------------------------------------
+CONTAINER           CPU %               MEM USAGE / LIMIT     MEM %               NET I/O             BLOCK I/O
+923a8fd0d953        98.66%              5.935 MB / 4.145 GB   0.14%               3.352 kB / 648 B    0 B / 65.54 kB
+[logs]--------------------------------------
+--- dumping /app/apache-storm-0.9.5/conf/storm.yaml ---
+# created at 2016-01-21 10:21:56+00:00
+ui.port: 8081
+storm.zookeeper.servers:
+   - kzk
+storm.local.dir: /app
+nimbus.seeds: [nimbus]
+nimbus.host: nimbus
+--- /app/apache-storm-0.9.5/conf/storm.yaml end ---
+[service]--------------------------------------
+99c6272336ed        eucm/openlrs                  "./run.sh"               11 minutes ago      Up 11 minutes       0.0.0.0:8180->8080/tcp   lrs
+[stats]--------------------------------------
+CONTAINER           CPU %               MEM USAGE / LIMIT     MEM %               NET I/O               BLOCK I/O
+99c6272336ed        0.09%               653.3 MB / 4.145 GB   15.76%              80.22 kB / 55.26 kB   93.77 MB / 24.58 kB
+[logs]--------------------------------------
+Redis should be at: redis
+ElasticSearch should be at: elastic:9300
+[INFO] Scanning for projects...
+[INFO]                                                                         
+[INFO] ------------------------------------------------------------------------
+[INFO] Building Apereo OpenLRS Project 1.0-SNAPSHOT
+[INFO] ------------------------------------------------------------------------
+[INFO] 
+[INFO] >>> spring-boot-maven-plugin:1.2.0.M2:run (default-cli) > test-compile @ openlrs >>>
+[INFO] 
+[INFO] --- maven-resources-plugin:2.6:resources (default-resources) @ openlrs ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] Copying 1 resource
+[INFO] Copying 7 resources
+[INFO] 
+[INFO] --- maven-compiler-plugin:3.1:compile (default-compile) @ openlrs ---
+[INFO] Nothing to compile - all classes are up to date
+[INFO] 
+[INFO] --- maven-resources-plugin:2.6:testResources (default-testResources) @ openlrs ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] skip non existing resourceDirectory /app/src/test/resources
+[INFO] 
+[INFO] --- maven-compiler-plugin:3.1:testCompile (default-testCompile) @ openlrs ---
+[INFO] Changes detected - recompiling the module!
+[INFO] Compiling 7 source files to /app/target/test-classes
+[INFO] 
+[INFO] <<< spring-boot-maven-plugin:1.2.0.M2:run (default-cli) < test-compile @ openlrs <<<
+[INFO] 
+[INFO] --- spring-boot-maven-plugin:1.2.0.M2:run (default-cli) @ openlrs ---
+[INFO] Attaching agents: []
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+ :: Spring Boot ::             (v1.2.0.M2)
+
+2016-01-21 10:21:44.578  INFO 36 --- [           main] org.apereo.openlrs.Application           : Starting Application on lrs with PID 36 (/app/target/classes started by user in /app)
+2016-01-21 10:21:44.670  INFO 36 --- [           main] ationConfigEmbeddedWebApplicationContext : Refreshing org.springframework.boot.context.embedded.AnnotationConfigEmbeddedWebApplicationContext@176d53b2: startup date [Thu Jan 21 10:21:44 UTC 2016]; root of context hierarchy
+2016-01-21 10:21:46.501  INFO 36 --- [           main] o.s.b.f.s.DefaultListableBeanFactory     : Overriding bean definition for bean 'org.springframework.boot.autoconfigure.AutoConfigurationPackages': replacing [Generic bean: class [org.springframework.boot.autoconfigure.AutoConfigurationPackages$BasePackages]; scope=; abstract=false; lazyInit=false; autowireMode=0; dependencyCheck=0; autowireCandidate=true; primary=false; factoryBeanName=null; factoryMethodName=null; initMethodName=null; destroyMethodName=null] with [Generic bean: class [org.springframework.boot.autoconfigure.AutoConfigurationPackages$BasePackages]; scope=; abstract=false; lazyInit=false; autowireMode=0; dependencyCheck=0; autowireCandidate=true; primary=false; factoryBeanName=null; factoryMethodName=null; initMethodName=null; destroyMethodName=null]
+2016-01-21 10:21:46.806  INFO 36 --- [           main] o.s.b.f.s.DefaultListableBeanFactory     : Overriding bean definition for bean 'beanNameViewResolver': replacing [Root bean: class [null]; scope=; abstract=false; lazyInit=false; autowireMode=3; dependencyCheck=0; autowireCandidate=true; primary=false; factoryBeanName=org.springframework.boot.autoconfigure.web.ErrorMvcAutoConfiguration$WhitelabelErrorViewConfiguration; factoryMethodName=beanNameViewResolver; initMethodName=null; destroyMethodName=(inferred); defined in class path resource [org/springframework/boot/autoconfigure/web/ErrorMvcAutoConfiguration$WhitelabelErrorViewConfiguration.class]] with [Root bean: class [null]; scope=; abstract=false; lazyInit=false; autowireMode=3; dependencyCheck=0; autowireCandidate=true; primary=false; factoryBeanName=org.springframework.boot.autoconfigure.web.WebMvcAutoConfiguration$WebMvcAutoConfigurationAdapter; factoryMethodName=beanNameViewResolver; initMethodName=null; destroyMethodName=(inferred); defined in class path resource [org/springframework/boot/autoconfigure/web/WebMvcAutoConfiguration$WebMvcAutoConfigurationAdapter.class]]
+2016-01-21 10:21:49.124  INFO 36 --- [           main] trationDelegate$BeanPostProcessorChecker : Bean 'org.springframework.boot.autoconfigure.dao.PersistenceExceptionTranslationAutoConfiguration' of type [class org.springframework.boot.autoconfigure.dao.PersistenceExceptionTranslationAutoConfiguration] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+2016-01-21 10:21:49.513  INFO 36 --- [           main] s.b.c.e.t.TomcatEmbeddedServletContainer : Tomcat initialized with port(s): 8080/http
+2016-01-21 10:21:49.910  INFO 36 --- [           main] o.apache.catalina.core.StandardService   : Starting service Tomcat
+2016-01-21 10:21:49.912  INFO 36 --- [           main] org.apache.catalina.core.StandardEngine  : Starting Servlet Engine: Apache Tomcat/7.0.55
+2016-01-21 10:21:50.129  INFO 36 --- [ost-startStop-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2016-01-21 10:21:50.130  INFO 36 --- [ost-startStop-1] o.s.web.context.ContextLoader            : Root WebApplicationContext: initialization completed in 5462 ms
+2016-01-21 10:21:51.137  INFO 36 --- [ost-startStop-1] o.s.b.c.embedded.FilterRegistrationBean  : Mapping filter: 'metricFilter' to: [/*]
+2016-01-21 10:21:51.140  INFO 36 --- [ost-startStop-1] o.s.b.c.embedded.FilterRegistrationBean  : Mapping filter: 'CORSFilter' to urls: [/xAPI/*]
+2016-01-21 10:21:51.140  INFO 36 --- [ost-startStop-1] o.s.b.c.embedded.FilterRegistrationBean  : Mapping filter: 'openLRSAuthenticationFilter' to urls: [/xAPI/statements, /xAPI/statements/*, /api/*]
+2016-01-21 10:21:51.141  INFO 36 --- [ost-startStop-1] o.s.b.c.embedded.FilterRegistrationBean  : Mapping filter: 'XAPIRequestValidationFilter' to urls: [/xAPI/*]
+2016-01-21 10:21:51.141  INFO 36 --- [ost-startStop-1] o.s.b.c.embedded.FilterRegistrationBean  : Mapping filter: 'OAuthFilter' to urls: [/lti]
+2016-01-21 10:21:51.142  INFO 36 --- [ost-startStop-1] o.s.b.c.embedded.FilterRegistrationBean  : Mapping filter: 'XAPIHeaderFilter' to: [/*]
+2016-01-21 10:21:51.142  INFO 36 --- [ost-startStop-1] o.s.b.c.embedded.FilterRegistrationBean  : Mapping filter: 'hiddenHttpMethodFilter' to: [/*]
+2016-01-21 10:21:51.143  INFO 36 --- [ost-startStop-1] o.s.b.c.embedded.FilterRegistrationBean  : Mapping filter: 'applicationContextIdFilter' to: [/*]
+2016-01-21 10:21:51.143  INFO 36 --- [ost-startStop-1] o.s.b.c.embedded.FilterRegistrationBean  : Mapping filter: 'webRequestLoggingFilter' to: [/*]
+2016-01-21 10:21:51.144  INFO 36 --- [ost-startStop-1] o.s.b.c.e.ServletRegistrationBean        : Mapping servlet: 'dispatcherServlet' to [/]
+2016-01-21 10:21:51.527  INFO 36 --- [           main] org.elasticsearch.plugins                : [Man-Eater] loaded [], sites []
+2016-01-21 10:21:52.152  INFO 36 --- [           main] o.s.d.e.c.TransportClientFactoryBean     : adding transport node : elastic:9300
+2016-01-21 10:21:54.091  INFO 36 --- [           main] o.s.w.s.handler.SimpleUrlHandlerMapping  : Mapped URL path [/**/favicon.ico] onto handler of type [class org.springframework.web.servlet.resource.ResourceHttpRequestHandler]
+2016-01-21 10:21:54.223  INFO 36 --- [           main] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped "{[/ || //],methods=[GET],params=[],headers=[],consumes=[],produces=[],custom=[]}" onto public java.lang.String org.apereo.openlrs.controllers.OpenLRSController.index()
+2016-01-21 10:21:54.225  INFO 36 --- [           main] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped "{[/xAPI/about],methods=[GET],params=[],headers=[],consumes=[],produces=[application/json;charset=utf-8],custom=[]}" onto public org.apereo.openlrs.model.xapi.About org.apereo.openlrs.controllers.xapi.AboutController.about()
+2016-01-21 10:21:54.228  INFO 36 --- [           main] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped "{[/xAPI/statements || /xAPI/statements/],methods=[POST],params=[],headers=[],consumes=[application/json],produces=[application/json;charset=utf-8],custom=[]}" onto public java.util.List<java.lang.String> org.apereo.openlrs.controllers.xapi.StatementController.postStatement(java.lang.String) throws org.apereo.openlrs.exceptions.xapi.InvalidXAPIRequestException
+2016-01-21 10:21:54.230  INFO 36 --- [           main] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped "{[/xAPI/statements],methods=[GET],params=[!statementId],headers=[],consumes=[],produces=[application/json;charset=utf-8],custom=[]}" onto public org.apereo.openlrs.model.xapi.StatementResult org.apereo.openlrs.controllers.xapi.StatementController.getStatement(java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.lang.String)
+2016-01-21 10:21:54.230  INFO 36 --- [           main] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped "{[/xAPI/statements],methods=[GET],params=[statementId],headers=[],consumes=[],produces=[application/json;charset=utf-8],custom=[]}" onto public org.apereo.openlrs.model.xapi.Statement org.apereo.openlrs.controllers.xapi.StatementController.getStatement(java.lang.String,java.util.Map<java.lang.String, java.lang.String>)
+2016-01-21 10:21:54.231  INFO 36 --- [           main] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped "{[/api/user/{id}],methods=[GET],params=[],headers=[],consumes=[],produces=[application/json;charset=utf-8],custom=[]}" onto public org.springframework.data.domain.Page<org.apereo.openlrs.model.OpenLRSEntity> org.apereo.openlrs.controllers.ConvenienceAPIController.getEventsForUser(java.lang.String,java.lang.String,java.lang.String,java.lang.String)
+2016-01-21 10:21:54.231  INFO 36 --- [           main] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped "{[/api/user/{userId}/context/{contextId}],methods=[GET],params=[],headers=[],consumes=[],produces=[application/json;charset=utf-8],custom=[]}" onto public org.springframework.data.domain.Page<org.apereo.openlrs.model.OpenLRSEntity> org.apereo.openlrs.controllers.ConvenienceAPIController.getEventsForContextAndUser(java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.lang.String)
+2016-01-21 10:21:54.232  INFO 36 --- [           main] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped "{[/api/context/{id}],methods=[GET],params=[],headers=[],consumes=[],produces=[application/json;charset=utf-8],custom=[]}" onto public org.springframework.data.domain.Page<org.apereo.openlrs.model.OpenLRSEntity> org.apereo.openlrs.controllers.ConvenienceAPIController.getEventsForContext(java.lang.String,java.lang.String,java.lang.String,java.lang.String)
+2016-01-21 10:21:54.235  INFO 36 --- [           main] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped "{[/error],methods=[],params=[],headers=[],consumes=[],produces=[text/html],custom=[]}" onto public org.springframework.web.servlet.ModelAndView org.springframework.boot.autoconfigure.web.BasicErrorController.errorHtml(javax.servlet.http.HttpServletRequest)
+2016-01-21 10:21:54.238  INFO 36 --- [           main] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped "{[/error],methods=[],params=[],headers=[],consumes=[],produces=[],custom=[]}" onto public org.springframework.http.ResponseEntity<java.util.Map<java.lang.String, java.lang.Object>> org.springframework.boot.autoconfigure.web.BasicErrorController.error(javax.servlet.http.HttpServletRequest)
+2016-01-21 10:21:54.278  INFO 36 --- [           main] o.s.w.s.handler.SimpleUrlHandlerMapping  : Mapped URL path [/webjars/**] onto handler of type [class org.springframework.web.servlet.resource.ResourceHttpRequestHandler]
+2016-01-21 10:21:54.280  INFO 36 --- [           main] o.s.w.s.handler.SimpleUrlHandlerMapping  : Mapped URL path [/**] onto handler of type [class org.springframework.web.servlet.resource.ResourceHttpRequestHandler]
+2016-01-21 10:21:54.319  INFO 36 --- [           main] s.w.s.m.m.a.RequestMappingHandlerAdapter : Looking for @ControllerAdvice: org.springframework.boot.context.embedded.AnnotationConfigEmbeddedWebApplicationContext@176d53b2: startup date [Thu Jan 21 10:21:44 UTC 2016]; root of context hierarchy
+2016-01-21 10:21:54.380  INFO 36 --- [           main] .m.m.a.ExceptionHandlerExceptionResolver : Detected @ExceptionHandler methods in XAPIExceptionHandlerAdvice
+2016-01-21 10:21:54.951  INFO 36 --- [           main] o.s.b.a.e.mvc.EndpointHandlerMapping     : Mapped "{[/beans],methods=[GET],params=[],headers=[],consumes=[],produces=[],custom=[]}" onto public java.lang.Object org.springframework.boot.actuate.endpoint.mvc.EndpointMvcAdapter.invoke()
+2016-01-21 10:21:54.953  INFO 36 --- [           main] o.s.b.a.e.mvc.EndpointHandlerMapping     : Mapped "{[/info],methods=[GET],params=[],headers=[],consumes=[],produces=[],custom=[]}" onto public java.lang.Object org.springframework.boot.actuate.endpoint.mvc.EndpointMvcAdapter.invoke()
+2016-01-21 10:21:54.954  INFO 36 --- [           main] o.s.b.a.e.mvc.EndpointHandlerMapping     : Mapped "{[/shutdown],methods=[POST],params=[],headers=[],consumes=[],produces=[],custom=[]}" onto public java.lang.Object org.springframework.boot.actuate.endpoint.mvc.ShutdownMvcEndpoint.invoke()
+2016-01-21 10:21:54.954  INFO 36 --- [           main] o.s.b.a.e.mvc.EndpointHandlerMapping     : Mapped "{[/health],methods=[],params=[],headers=[],consumes=[],produces=[],custom=[]}" onto public java.lang.Object org.springframework.boot.actuate.endpoint.mvc.HealthMvcEndpoint.invoke()
+2016-01-21 10:21:54.955  INFO 36 --- [           main] o.s.b.a.e.mvc.EndpointHandlerMapping     : Mapped "{[/trace],methods=[GET],params=[],headers=[],consumes=[],produces=[],custom=[]}" onto public java.lang.Object org.springframework.boot.actuate.endpoint.mvc.EndpointMvcAdapter.invoke()
+2016-01-21 10:21:54.956  INFO 36 --- [           main] o.s.b.a.e.mvc.EndpointHandlerMapping     : Mapped "{[/metrics/{name:.*}],methods=[GET],params=[],headers=[],consumes=[],produces=[],custom=[]}" onto public java.lang.Object org.springframework.boot.actuate.endpoint.mvc.MetricsMvcEndpoint.value(java.lang.String)
+2016-01-21 10:21:54.956  INFO 36 --- [           main] o.s.b.a.e.mvc.EndpointHandlerMapping     : Mapped "{[/metrics],methods=[GET],params=[],headers=[],consumes=[],produces=[],custom=[]}" onto public java.lang.Object org.springframework.boot.actuate.endpoint.mvc.EndpointMvcAdapter.invoke()
+2016-01-21 10:21:54.957  INFO 36 --- [           main] o.s.b.a.e.mvc.EndpointHandlerMapping     : Mapped "{[/mappings],methods=[GET],params=[],headers=[],consumes=[],produces=[],custom=[]}" onto public java.lang.Object org.springframework.boot.actuate.endpoint.mvc.EndpointMvcAdapter.invoke()
+2016-01-21 10:21:54.958  INFO 36 --- [           main] o.s.b.a.e.mvc.EndpointHandlerMapping     : Mapped "{[/configprops],methods=[GET],params=[],headers=[],consumes=[],produces=[],custom=[]}" onto public java.lang.Object org.springframework.boot.actuate.endpoint.mvc.EndpointMvcAdapter.invoke()
+2016-01-21 10:21:54.958  INFO 36 --- [           main] o.s.b.a.e.mvc.EndpointHandlerMapping     : Mapped "{[/env/{name:.*}],methods=[GET],params=[],headers=[],consumes=[],produces=[],custom=[]}" onto public java.lang.Object org.springframework.boot.actuate.endpoint.mvc.EnvironmentMvcEndpoint.value(java.lang.String)
+2016-01-21 10:21:54.959  INFO 36 --- [           main] o.s.b.a.e.mvc.EndpointHandlerMapping     : Mapped "{[/env],methods=[GET],params=[],headers=[],consumes=[],produces=[],custom=[]}" onto public java.lang.Object org.springframework.boot.actuate.endpoint.mvc.EndpointMvcAdapter.invoke()
+2016-01-21 10:21:54.959  INFO 36 --- [           main] o.s.b.a.e.mvc.EndpointHandlerMapping     : Mapped "{[/dump],methods=[GET],params=[],headers=[],consumes=[],produces=[],custom=[]}" onto public java.lang.Object org.springframework.boot.actuate.endpoint.mvc.EndpointMvcAdapter.invoke()
+2016-01-21 10:21:54.960  INFO 36 --- [           main] o.s.b.a.e.mvc.EndpointHandlerMapping     : Mapped "{[/autoconfig],methods=[GET],params=[],headers=[],consumes=[],produces=[],custom=[]}" onto public java.lang.Object org.springframework.boot.actuate.endpoint.mvc.EndpointMvcAdapter.invoke()
+2016-01-21 10:21:54.997  INFO 36 --- [           main] o.s.j.e.a.AnnotationMBeanExporter        : Registering beans for JMX exposure on startup
+2016-01-21 10:21:55.004  INFO 36 --- [           main] o.s.b.a.e.jmx.EndpointMBeanExporter      : Registering beans for JMX exposure on startup
+2016-01-21 10:21:55.008  INFO 36 --- [           main] o.s.c.support.DefaultLifecycleProcessor  : Starting beans in phase 0
+2016-01-21 10:21:55.011  INFO 36 --- [           main] o.s.b.a.e.jmx.EndpointMBeanExporter      : Located managed bean 'requestMappingEndpoint': registering with JMX server as MBean [org.springframework.boot:type=Endpoint,name=requestMappingEndpoint]
+2016-01-21 10:21:55.038  INFO 36 --- [           main] o.s.b.a.e.jmx.EndpointMBeanExporter      : Located managed bean 'environmentEndpoint': registering with JMX server as MBean [org.springframework.boot:type=Endpoint,name=environmentEndpoint]
+2016-01-21 10:21:55.054  INFO 36 --- [           main] o.s.b.a.e.jmx.EndpointMBeanExporter      : Located managed bean 'healthEndpoint': registering with JMX server as MBean [org.springframework.boot:type=Endpoint,name=healthEndpoint]
+2016-01-21 10:21:55.064  INFO 36 --- [           main] o.s.b.a.e.jmx.EndpointMBeanExporter      : Located managed bean 'beansEndpoint': registering with JMX server as MBean [org.springframework.boot:type=Endpoint,name=beansEndpoint]
+2016-01-21 10:21:55.072  INFO 36 --- [           main] o.s.b.a.e.jmx.EndpointMBeanExporter      : Located managed bean 'infoEndpoint': registering with JMX server as MBean [org.springframework.boot:type=Endpoint,name=infoEndpoint]
+2016-01-21 10:21:55.080  INFO 36 --- [           main] o.s.b.a.e.jmx.EndpointMBeanExporter      : Located managed bean 'metricsEndpoint': registering with JMX server as MBean [org.springframework.boot:type=Endpoint,name=metricsEndpoint]
+2016-01-21 10:21:55.084  INFO 36 --- [           main] o.s.b.a.e.jmx.EndpointMBeanExporter      : Located managed bean 'traceEndpoint': registering with JMX server as MBean [org.springframework.boot:type=Endpoint,name=traceEndpoint]
+2016-01-21 10:21:55.095  INFO 36 --- [           main] o.s.b.a.e.jmx.EndpointMBeanExporter      : Located managed bean 'dumpEndpoint': registering with JMX server as MBean [org.springframework.boot:type=Endpoint,name=dumpEndpoint]
+2016-01-21 10:21:55.108  INFO 36 --- [           main] o.s.b.a.e.jmx.EndpointMBeanExporter      : Located managed bean 'autoConfigurationAuditEndpoint': registering with JMX server as MBean [org.springframework.boot:type=Endpoint,name=autoConfigurationAuditEndpoint]
+2016-01-21 10:21:55.115  INFO 36 --- [           main] o.s.b.a.e.jmx.EndpointMBeanExporter      : Located managed bean 'shutdownEndpoint': registering with JMX server as MBean [org.springframework.boot:type=Endpoint,name=shutdownEndpoint]
+2016-01-21 10:21:55.134  INFO 36 --- [           main] o.s.b.a.e.jmx.EndpointMBeanExporter      : Located managed bean 'configurationPropertiesReportEndpoint': registering with JMX server as MBean [org.springframework.boot:type=Endpoint,name=configurationPropertiesReportEndpoint]
+2016-01-21 10:21:55.136  INFO 36 --- [           main] o.s.c.support.DefaultLifecycleProcessor  : Starting beans in phase 2147483647
+2016-01-21 10:21:55.240  INFO 36 --- [           main] s.b.c.e.t.TomcatEmbeddedServletContainer : Tomcat started on port(s): 8080/http
+2016-01-21 10:21:55.242  INFO 36 --- [           main] org.apereo.openlrs.Application           : Started Application in 11.337 seconds (JVM running for 12.491)
+[service]--------------------------------------
+d96bda05c875        eucm/storm-nimbus             "/bin/sh -c './goStor"   11 minutes ago      Up 11 minutes       0.0.0.0:6627->6627/tcp   nimbus
+[stats]--------------------------------------
+CONTAINER           CPU %               MEM USAGE / LIMIT     MEM %               NET I/O               BLOCK I/O
+d96bda05c875        0.07%               239.9 MB / 4.145 GB   5.79%               100.5 kB / 76.72 kB   65.38 MB / 102.4 kB
+[logs]--------------------------------------
+--- dumping /app/apache-storm-0.9.5/conf/storm.yaml ---
+# created at 2016-01-21 10:21:31+00:00
+ui.port: 8081
+storm.zookeeper.servers:
+   - kzk
+storm.local.dir: /app
+nimbus.seeds: [172.18.0.8 	]
+nimbus.host: 172.18.0.8 	
+--- /app/apache-storm-0.9.5/conf/storm.yaml end ---
+[service]--------------------------------------
+efd439ed0f8d        spotify/kafka                 "supervisord -n"         11 minutes ago      Up 11 minutes       2181/tcp, 9092/tcp       kzk
+[stats]--------------------------------------
+CONTAINER           CPU %               MEM USAGE / LIMIT     MEM %               NET I/O               BLOCK I/O
+efd439ed0f8d        0.22%               252.4 MB / 4.145 GB   6.09%               83.62 kB / 95.11 kB   25.9 MB / 114.7 kB
+[logs]--------------------------------------
+/usr/lib/python2.7/dist-packages/supervisor/options.py:296: UserWarning: Supervisord is running as root and it is searching for its configuration file in default locations (including its current working directory); you probably want to specify a "-c" argument specifying an absolute path to a configuration file for improved security.
+  'Supervisord is running as root and it is searching '
+2016-01-21 10:21:24,958 CRIT Supervisor running as root (no user in config file)
+2016-01-21 10:21:24,958 WARN Included extra file "/etc/supervisor/conf.d/zookeeper.conf" during parsing
+2016-01-21 10:21:24,958 WARN Included extra file "/etc/supervisor/conf.d/kafka.conf" during parsing
+2016-01-21 10:21:24,975 INFO RPC interface 'supervisor' initialized
+2016-01-21 10:21:24,976 CRIT Server 'unix_http_server' running without any HTTP authentication checking
+2016-01-21 10:21:24,976 INFO supervisord started with pid 1
+2016-01-21 10:21:25,979 INFO spawned: 'zookeeper' with pid 7
+2016-01-21 10:21:25,980 INFO spawned: 'kafka' with pid 8
+2016-01-21 10:21:27,011 INFO success: zookeeper entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2016-01-21 10:21:27,011 INFO success: kafka entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+[service]--------------------------------------
+e1f08b9473dd        redis:3.0                     "/entrypoint.sh redis"   11 minutes ago      Up 11 minutes       6379/tcp                 redis
+[stats]--------------------------------------
+CONTAINER           CPU %               MEM USAGE / LIMIT     MEM %               NET I/O               BLOCK I/O
+e1f08b9473dd        0.07%               13.63 MB / 4.145 GB   0.33%               10.39 kB / 3.629 kB   7.012 MB / 0 B
+[logs]--------------------------------------
+1:C 21 Jan 10:21:24.392 # Warning: no config file specified, using the default config. In order to specify a config file use redis-server /path/to/redis.conf
+                _._                                                  
+           _.-``__ ''-._                                             
+      _.-``    `.  `_.  ''-._           Redis 3.0.6 (00000000/0) 64 bit
+  .-`` .-```.  ```\/    _.,_ ''-._                                   
+ (    '      ,       .-`  | `,    )     Running in standalone mode
+ |`-._`-...-` __...-.``-._|'` _.-'|     Port: 6379
+ |    `-._   `._    /     _.-'    |     PID: 1
+  `-._    `-._  `-./  _.-'    _.-'                                   
+ |`-._`-._    `-.__.-'    _.-'_.-'|                                  
+ |    `-._`-._        _.-'_.-'    |           http://redis.io        
+  `-._    `-._`-.__.-'_.-'    _.-'                                   
+ |`-._`-._    `-.__.-'    _.-'_.-'|                                  
+ |    `-._`-._        _.-'_.-'    |                                  
+  `-._    `-._`-.__.-'_.-'    _.-'                                   
+      `-._    `-.__.-'    _.-'                                       
+          `-._        _.-'                                           
+              `-.__.-'                                               
+
+1:M 21 Jan 10:21:24.394 # WARNING: The TCP backlog setting of 511 cannot be enforced because /proc/sys/net/core/somaxconn is set to the lower value of 128.
+1:M 21 Jan 10:21:24.394 # Server started, Redis version 3.0.6
+1:M 21 Jan 10:21:24.394 # WARNING overcommit_memory is set to 0! Background save may fail under low memory condition. To fix this issue add 'vm.overcommit_memory = 1' to /etc/sysctl.conf and then reboot or run the command 'sysctl vm.overcommit_memory=1' for this to take effect.
+1:M 21 Jan 10:21:24.394 # WARNING you have Transparent Huge Pages (THP) support enabled in your kernel. This will create latency and memory usage issues with Redis. To fix this issue run the command 'echo never > /sys/kernel/mm/transparent_hugepage/enabled' as root, and add it to your /etc/rc.local in order to retain the setting after a reboot. Redis must be restarted after THP is disabled.
+1:M 21 Jan 10:21:24.394 * The server is now ready to accept connections on port 6379
+[service]--------------------------------------
+a1588262e389        elasticsearch:1.7.3           "/docker-entrypoint.s"   11 minutes ago      Up 11 minutes       9200/tcp, 9300/tcp       elastic
+[stats]--------------------------------------
+CONTAINER           CPU %               MEM USAGE / LIMIT     MEM %               NET I/O               BLOCK I/O
+a1588262e389        0.17%               345.5 MB / 4.145 GB   8.33%               62.32 kB / 75.98 kB   52.83 MB / 335.9 kB
+[logs]--------------------------------------
+[2016-01-21 10:21:24,757][INFO ][node                     ] [Mogul of the Mystic Mountain] version[1.7.3], pid[1], build[05d4530/2015-10-15T09:14:17Z]
+[2016-01-21 10:21:24,762][INFO ][node                     ] [Mogul of the Mystic Mountain] initializing ...
+[2016-01-21 10:21:24,927][INFO ][plugins                  ] [Mogul of the Mystic Mountain] loaded [], sites []
+[2016-01-21 10:21:24,981][INFO ][env                      ] [Mogul of the Mystic Mountain] using [1] data paths, mounts [[/usr/share/elasticsearch/data (/dev/disk/by-uuid/f894b304-4200-4226-b8db-9fa88c2108bc)]], net usable_space [22.9gb], net total_space [35.3gb], types [ext4]
+[2016-01-21 10:21:28,854][INFO ][node                     ] [Mogul of the Mystic Mountain] initialized
+[2016-01-21 10:21:28,855][INFO ][node                     ] [Mogul of the Mystic Mountain] starting ...
+[2016-01-21 10:21:29,003][INFO ][transport                ] [Mogul of the Mystic Mountain] bound_address {inet[/0:0:0:0:0:0:0:0:9300]}, publish_address {inet[/172.18.0.4:9300]}
+[2016-01-21 10:21:29,046][INFO ][discovery                ] [Mogul of the Mystic Mountain] elasticsearch/_bwLLGYtTaiB-riZak_dEg
+[2016-01-21 10:21:32,859][INFO ][cluster.service          ] [Mogul of the Mystic Mountain] new_master [Mogul of the Mystic Mountain][_bwLLGYtTaiB-riZak_dEg][elastic][inet[/172.18.0.4:9300]], reason: zen-disco-join (elected_as_master)
+[2016-01-21 10:21:32,988][INFO ][http                     ] [Mogul of the Mystic Mountain] bound_address {inet[/0:0:0:0:0:0:0:0:9200]}, publish_address {inet[/172.18.0.4:9200]}
+[2016-01-21 10:21:32,989][INFO ][node                     ] [Mogul of the Mystic Mountain] started
+[2016-01-21 10:21:32,991][INFO ][gateway                  ] [Mogul of the Mystic Mountain] recovered [0] indices into cluster_state
+[2016-01-21 10:21:52,970][INFO ][cluster.metadata         ] [Mogul of the Mystic Mountain] [event] creating index, cause [api], templates [], shards [5]/[1], mappings []
+[2016-01-21 10:21:53,277][INFO ][cluster.metadata         ] [Mogul of the Mystic Mountain] [event] create_mapping [event]
+[2016-01-21 10:21:53,533][INFO ][cluster.metadata         ] [Mogul of the Mystic Mountain] [openlrsstatement] creating index, cause [api], templates [], shards [5]/[1], mappings []
+[2016-01-21 10:21:53,668][INFO ][cluster.metadata         ] [Mogul of the Mystic Mountain] [openlrsstatement] create_mapping [statement]
+[2016-01-21 10:21:53,758][INFO ][cluster.metadata         ] [Mogul of the Mystic Mountain] [openlrsstatementmetadata] creating index, cause [api], templates [], shards [5]/[1], mappings []
+[2016-01-21 10:21:53,936][INFO ][cluster.metadata         ] [Mogul of the Mystic Mountain] [openlrsstatementmetadata] create_mapping [statement_metadata]
+[service]--------------------------------------
+57d65422f449        mongo:3.0                     "/entrypoint.sh mongo"   11 minutes ago      Up 11 minutes       27017/tcp                mongo
+[stats]--------------------------------------
+CONTAINER           CPU %               MEM USAGE / LIMIT     MEM %               NET I/O               BLOCK I/O
+57d65422f449        0.38%               107.7 MB / 4.145 GB   2.60%               88.95 kB / 81.75 kB   25.22 MB / 37.32 MB
+[logs]--------------------------------------
+2016-01-21T10:21:23.340+0000 I CONTROL  [initandlisten] MongoDB starting : pid=1 port=27017 dbpath=/data/db 64-bit host=mongo
+2016-01-21T10:21:23.341+0000 I CONTROL  [initandlisten] db version v3.0.8
+2016-01-21T10:21:23.341+0000 I CONTROL  [initandlisten] git version: 83d8cc25e00e42856924d84e220fbe4a839e605d
+2016-01-21T10:21:23.341+0000 I CONTROL  [initandlisten] build info: Linux ip-10-152-46-168 3.2.0-4-amd64 #1 SMP Debian 3.2.46-1 x86_64 BOOST_LIB_VERSION=1_49
+2016-01-21T10:21:23.341+0000 I CONTROL  [initandlisten] allocator: tcmalloc
+2016-01-21T10:21:23.341+0000 I CONTROL  [initandlisten] options: {}
+2016-01-21T10:21:23.366+0000 I JOURNAL  [initandlisten] journal dir=/data/db/journal
+2016-01-21T10:21:23.366+0000 I JOURNAL  [initandlisten] recover : no journal files present, no recovery needed
+2016-01-21T10:21:23.744+0000 I JOURNAL  [initandlisten] preallocateIsFaster=true 5.74
+2016-01-21T10:21:23.845+0000 I JOURNAL  [durability] Durability thread started
+2016-01-21T10:21:23.846+0000 I JOURNAL  [journal writer] Journal writer thread started
+2016-01-21T10:21:23.846+0000 I CONTROL  [initandlisten] 
+2016-01-21T10:21:23.846+0000 I CONTROL  [initandlisten] ** WARNING: /sys/kernel/mm/transparent_hugepage/enabled is 'always'.
+2016-01-21T10:21:23.846+0000 I CONTROL  [initandlisten] **        We suggest setting it to 'never'
+2016-01-21T10:21:23.847+0000 I CONTROL  [initandlisten] 
+2016-01-21T10:21:23.847+0000 I CONTROL  [initandlisten] ** WARNING: /sys/kernel/mm/transparent_hugepage/defrag is 'always'.
+2016-01-21T10:21:23.847+0000 I CONTROL  [initandlisten] **        We suggest setting it to 'never'
+2016-01-21T10:21:23.847+0000 I CONTROL  [initandlisten] 
+2016-01-21T10:21:23.848+0000 I INDEX    [initandlisten] allocating new ns file /data/db/local.ns, filling with zeroes...
+2016-01-21T10:21:23.898+0000 I STORAGE  [FileAllocator] allocating new datafile /data/db/local.0, filling with zeroes...
+2016-01-21T10:21:23.898+0000 I STORAGE  [FileAllocator] creating directory /data/db/_tmp
+2016-01-21T10:21:23.901+0000 I STORAGE  [FileAllocator] done allocating datafile /data/db/local.0, size: 64MB,  took 0 secs
+2016-01-21T10:21:23.910+0000 I NETWORK  [initandlisten] waiting for connections on port 27017
+2016-01-21T10:21:30.432+0000 I NETWORK  [initandlisten] connection accepted from 172.18.0.1:39924 #1 (1 connection now open)
+2016-01-21T10:21:30.434+0000 I NETWORK  [conn1] end connection 172.18.0.1:39924 (0 connections now open)
+2016-01-21T10:22:02.070+0000 I NETWORK  [initandlisten] connection accepted from 172.18.0.13:49058 #2 (1 connection now open)
+2016-01-21T10:22:02.071+0000 I NETWORK  [initandlisten] connection accepted from 172.18.0.13:49059 #3 (2 connections now open)
+2016-01-21T10:22:02.071+0000 I NETWORK  [initandlisten] connection accepted from 172.18.0.13:49060 #4 (3 connections now open)
+2016-01-21T10:22:02.071+0000 I NETWORK  [initandlisten] connection accepted from 172.18.0.13:49061 #5 (4 connections now open)
+2016-01-21T10:22:02.072+0000 I NETWORK  [initandlisten] connection accepted from 172.18.0.13:49062 #6 (5 connections now open)
+2016-01-21T10:22:02.300+0000 I INDEX    [conn6] allocating new ns file /data/db/a2.ns, filling with zeroes...
+2016-01-21T10:22:02.367+0000 I STORAGE  [FileAllocator] allocating new datafile /data/db/a2.0, filling with zeroes...
+2016-01-21T10:22:02.368+0000 I STORAGE  [FileAllocator] done allocating datafile /data/db/a2.0, size: 64MB,  took 0 secs
+2016-01-21T10:22:02.393+0000 I INDEX    [conn6] build index on: a2.users properties: { v: 1, unique: true, key: { email: 1 }, name: "email_1", ns: "a2.users", background: true }
+2016-01-21T10:22:02.393+0000 I INDEX    [conn6] build index done.  scanned 0 total records. 0 secs
+2016-01-21T10:22:02.399+0000 I INDEX    [conn3] build index on: a2.users properties: { v: 1, unique: true, key: { username: 1 }, name: "username_1", ns: "a2.users", background: true }
+2016-01-21T10:22:02.399+0000 I INDEX    [conn3] build index done.  scanned 0 total records. 0 secs
+2016-01-21T10:22:03.662+0000 I INDEX    [conn4] build index on: a2.acl_meta properties: { v: 1, key: { _bucketname: 1, key: 1 }, name: "_bucketname_1_key_1", ns: "a2.acl_meta" }
+2016-01-21T10:22:03.662+0000 I INDEX    [conn4] 	 building index using bulk method
+2016-01-21T10:22:03.662+0000 I INDEX    [conn4] build index done.  scanned 1 total records. 0 secs
+2016-01-21T10:22:03.665+0000 I INDEX    [conn2] build index on: a2.acl_allows_/api/applications properties: { v: 1, key: { _bucketname: 1, key: 1 }, name: "_bucketname_1_key_1", ns: "a2.acl_allows_/api/applications" }
+2016-01-21T10:22:03.665+0000 I INDEX    [conn2] 	 building index using bulk method
+2016-01-21T10:22:03.666+0000 I INDEX    [conn2] build index done.  scanned 1 total records. 0 secs
+2016-01-21T10:22:03.668+0000 I INDEX    [conn5] build index on: a2.acl_allows_/api/applications/:applicationId properties: { v: 1, key: { _bucketname: 1, key: 1 }, name: "_bucketname_1_key_1", ns: "a2.acl_allows_/api/applications/:applicationId" }
+2016-01-21T10:22:03.668+0000 I INDEX    [conn5] 	 building index using bulk method
+2016-01-21T10:22:03.668+0000 I INDEX    [conn5] build index done.  scanned 1 total records. 0 secs
+2016-01-21T10:22:03.671+0000 I INDEX    [conn3] build index on: a2.acl_allows_/api/users properties: { v: 1, key: { _bucketname: 1, key: 1 }, name: "_bucketname_1_key_1", ns: "a2.acl_allows_/api/users" }
+2016-01-21T10:22:03.671+0000 I INDEX    [conn3] 	 building index using bulk method
+2016-01-21T10:22:03.672+0000 I INDEX    [conn3] build index done.  scanned 1 total records. 0 secs
+2016-01-21T10:22:03.674+0000 I INDEX    [conn6] build index on: a2.acl_allows_/api/users/:userId properties: { v: 1, key: { _bucketname: 1, key: 1 }, name: "_bucketname_1_key_1", ns: "a2.acl_allows_/api/users/:userId" }
+2016-01-21T10:22:03.674+0000 I INDEX    [conn6] 	 building index using bulk method
+2016-01-21T10:22:03.674+0000 I INDEX    [conn6] build index done.  scanned 1 total records. 0 secs
+2016-01-21T10:22:03.677+0000 I INDEX    [conn4] build index on: a2.acl_allows_/api/users/:userId/verification properties: { v: 1, key: { _bucketname: 1, key: 1 }, name: "_bucketname_1_key_1", ns: "a2.acl_allows_/api/users/:userId/verification" }
+2016-01-21T10:22:03.677+0000 I INDEX    [conn4] 	 building index using bulk method
+2016-01-21T10:22:03.677+0000 I INDEX    [conn4] build index done.  scanned 1 total records. 0 secs
+2016-01-21T10:22:03.679+0000 I INDEX    [conn2] build index on: a2.acl_allows_/api/users/:userId/roles properties: { v: 1, key: { _bucketname: 1, key: 1 }, name: "_bucketname_1_key_1", ns: "a2.acl_allows_/api/users/:userId/roles" }
+2016-01-21T10:22:03.679+0000 I INDEX    [conn2] 	 building index using bulk method
+2016-01-21T10:22:03.679+0000 I INDEX    [conn2] build index done.  scanned 1 total records. 0 secs
+2016-01-21T10:22:03.694+0000 I INDEX    [conn5] build index on: a2.acl_allows_/api/users/:userId/roles/:roleName properties: { v: 1, key: { _bucketname: 1, key: 1 }, name: "_bucketname_1_key_1", ns: "a2.acl_allows_/api/users/:userId/roles/:roleName" }
+2016-01-21T10:22:03.696+0000 I INDEX    [conn5] 	 building index using bulk method
+2016-01-21T10:22:03.696+0000 I INDEX    [conn5] build index done.  scanned 1 total records. 0 secs
+2016-01-21T10:22:03.704+0000 I INDEX    [conn3] build index on: a2.acl_allows_/api/users/:userId/*/:permissionName properties: { v: 1, key: { _bucketname: 1, key: 1 }, name: "_bucketname_1_key_1", ns: "a2.acl_allows_/api/users/:userId/*/:permissionName" }
+2016-01-21T10:22:03.704+0000 I INDEX    [conn3] 	 building index using bulk method
+2016-01-21T10:22:03.704+0000 I INDEX    [conn3] build index done.  scanned 1 total records. 0 secs
+2016-01-21T10:22:03.708+0000 I INDEX    [conn6] build index on: a2.acl_allows_/api/roles properties: { v: 1, key: { _bucketname: 1, key: 1 }, name: "_bucketname_1_key_1", ns: "a2.acl_allows_/api/roles" }
+2016-01-21T10:22:03.708+0000 I INDEX    [conn6] 	 building index using bulk method
+2016-01-21T10:22:03.708+0000 I INDEX    [conn6] build index done.  scanned 1 total records. 0 secs
+2016-01-21T10:22:03.712+0000 I INDEX    [conn4] build index on: a2.acl_allows_/api/roles/:roleName properties: { v: 1, key: { _bucketname: 1, key: 1 }, name: "_bucketname_1_key_1", ns: "a2.acl_allows_/api/roles/:roleName" }
+2016-01-21T10:22:03.712+0000 I INDEX    [conn4] 	 building index using bulk method
+2016-01-21T10:22:03.712+0000 I INDEX    [conn4] build index done.  scanned 1 total records. 0 secs
+2016-01-21T10:22:03.714+0000 I INDEX    [conn2] build index on: a2.acl_allows_/api/roles/:roleName/resources properties: { v: 1, key: { _bucketname: 1, key: 1 }, name: "_bucketname_1_key_1", ns: "a2.acl_allows_/api/roles/:roleName/resources" }
+2016-01-21T10:22:03.715+0000 I INDEX    [conn2] 	 building index using bulk method
+2016-01-21T10:22:03.715+0000 I INDEX    [conn2] build index done.  scanned 1 total records. 0 secs
+2016-01-21T10:22:03.718+0000 I INDEX    [conn5] build index on: a2.acl_allows_/api/roles/:roleName/resources/* properties: { v: 1, key: { _bucketname: 1, key: 1 }, name: "_bucketname_1_key_1", ns: "a2.acl_allows_/api/roles/:roleName/resources/*" }
+2016-01-21T10:22:03.718+0000 I INDEX    [conn5] 	 building index using bulk method
+2016-01-21T10:22:03.719+0000 I INDEX    [conn5] build index done.  scanned 1 total records. 0 secs
+2016-01-21T10:22:03.721+0000 I INDEX    [conn3] build index on: a2.acl_allows_/api/roles/:roleName/resources/*/permissions properties: { v: 1, key: { _bucketname: 1, key: 1 }, name: "_bucketname_1_key_1", ns: "a2.acl_allows_/api/roles/:roleName/resources/*/permissions" }
+2016-01-21T10:22:03.721+0000 I INDEX    [conn3] 	 building index using bulk method
+2016-01-21T10:22:03.721+0000 I INDEX    [conn3] build index done.  scanned 1 total records. 0 secs
+2016-01-21T10:22:03.724+0000 I INDEX    [conn6] build index on: a2.acl_allows_/api/roles/:roleName/resources/*/permissions/:permissionName properties: { v: 1, key: { _bucketname: 1, key: 1 }, name: "_bucketname_1_key_1", ns: "a2.acl_allows_/api/roles/:roleName/resources/*/permissions/:permissionName" }
+2016-01-21T10:22:03.724+0000 I INDEX    [conn6] 	 building index using bulk method
+2016-01-21T10:22:03.724+0000 I INDEX    [conn6] build index done.  scanned 1 total records. 0 secs
+2016-01-21T10:22:03.726+0000 I INDEX    [conn4] build index on: a2.acl_allows_/api/roles/:roleName/users properties: { v: 1, key: { _bucketname: 1, key: 1 }, name: "_bucketname_1_key_1", ns: "a2.acl_allows_/api/roles/:roleName/users" }
+2016-01-21T10:22:03.727+0000 I INDEX    [conn4] 	 building index using bulk method
+2016-01-21T10:22:03.727+0000 I INDEX    [conn4] build index done.  scanned 1 total records. 0 secs
+2016-01-21T10:22:03.731+0000 I INDEX    [conn2] build index on: a2.acl_resources properties: { v: 1, key: { _bucketname: 1, key: 1 }, name: "_bucketname_1_key_1", ns: "a2.acl_resources" }
+2016-01-21T10:22:03.731+0000 I INDEX    [conn2] 	 building index using bulk method
+2016-01-21T10:22:03.731+0000 I INDEX    [conn2] build index done.  scanned 1 total records. 0 secs
+2016-01-21T10:22:03.750+0000 I INDEX    [conn2] build index on: a2.acl_users properties: { v: 1, key: { _bucketname: 1, key: 1 }, name: "_bucketname_1_key_1", ns: "a2.acl_users" }
+2016-01-21T10:22:03.750+0000 I INDEX    [conn2] 	 building index using bulk method
+2016-01-21T10:22:03.751+0000 I INDEX    [conn2] build index done.  scanned 1 total records. 0 secs
+2016-01-21T10:22:03.759+0000 I INDEX    [conn5] build index on: a2.acl_roles properties: { v: 1, key: { _bucketname: 1, key: 1 }, name: "_bucketname_1_key_1", ns: "a2.acl_roles" }
+2016-01-21T10:22:03.759+0000 I INDEX    [conn5] 	 building index using bulk method
+2016-01-21T10:22:03.759+0000 I INDEX    [conn5] build index done.  scanned 1 total records. 0 secs
+2016-01-21T10:22:03.763+0000 I NETWORK  [conn6] end connection 172.18.0.13:49062 (4 connections now open)
+2016-01-21T10:22:03.764+0000 I NETWORK  [conn5] end connection 172.18.0.13:49061 (3 connections now open)
+2016-01-21T10:22:03.764+0000 I NETWORK  [conn4] end connection 172.18.0.13:49060 (2 connections now open)
+2016-01-21T10:22:03.764+0000 I NETWORK  [conn3] end connection 172.18.0.13:49059 (2 connections now open)
+2016-01-21T10:22:03.764+0000 I NETWORK  [conn2] end connection 172.18.0.13:49058 (0 connections now open)
+2016-01-21T10:22:05.771+0000 I NETWORK  [initandlisten] connection accepted from 172.18.0.13:49067 #7 (1 connection now open)
+2016-01-21T10:22:05.778+0000 I NETWORK  [initandlisten] connection accepted from 172.18.0.13:49068 #8 (2 connections now open)
+2016-01-21T10:22:05.778+0000 I NETWORK  [initandlisten] connection accepted from 172.18.0.13:49069 #9 (3 connections now open)
+2016-01-21T10:22:05.778+0000 I NETWORK  [initandlisten] connection accepted from 172.18.0.13:49070 #10 (4 connections now open)
+2016-01-21T10:22:05.779+0000 I NETWORK  [initandlisten] connection accepted from 172.18.0.13:49071 #11 (5 connections now open)
+2016-01-21T10:22:06.269+0000 I INDEX    [conn9] build index on: a2.applications properties: { v: 1, unique: true, key: { prefix: 1 }, name: "prefix_1", ns: "a2.applications", background: true }
+2016-01-21T10:22:06.269+0000 I INDEX    [conn9] build index done.  scanned 0 total records. 0 secs
+2016-01-21T10:22:06.298+0000 I INDEX    [conn9] build index on: a2.applications properties: { v: 1, unique: true, key: { host: 1 }, name: "host_1", ns: "a2.applications", background: true }
+2016-01-21T10:22:06.298+0000 I INDEX    [conn9] build index done.  scanned 0 total records. 0 secs
+2016-01-21T10:22:14.181+0000 I INDEX    [conn9] build index on: a2.acl_allows_gleaner/games/public properties: { v: 1, key: { _bucketname: 1, key: 1 }, name: "_bucketname_1_key_1", ns: "a2.acl_allows_gleaner/games/public" }
+2016-01-21T10:22:14.181+0000 I INDEX    [conn9] 	 building index using bulk method
+2016-01-21T10:22:14.181+0000 I INDEX    [conn9] build index done.  scanned 1 total records. 0 secs
+2016-01-21T10:22:14.189+0000 I INDEX    [conn7] build index on: a2.acl_allows_gleaner/games/:gameId/versions properties: { v: 1, key: { _bucketname: 1, key: 1 }, name: "_bucketname_1_key_1", ns: "a2.acl_allows_gleaner/games/:gameId/versions" }
+2016-01-21T10:22:14.189+0000 I INDEX    [conn7] 	 building index using bulk method
+2016-01-21T10:22:14.189+0000 I INDEX    [conn7] build index done.  scanned 1 total records. 0 secs
+2016-01-21T10:22:14.206+0000 I INDEX    [conn10] build index on: a2.acl_allows_gleaner/games/:gameId/versions/:versionId properties: { v: 1, key: { _bucketname: 1, key: 1 }, name: "_bucketname_1_key_1", ns: "a2.acl_allows_gleaner/games/:gameId/versions/:versionId" }
+2016-01-21T10:22:14.206+0000 I INDEX    [conn10] 	 building index using bulk method
+2016-01-21T10:22:14.206+0000 I INDEX    [conn10] build index done.  scanned 1 total records. 0 secs
+2016-01-21T10:22:14.209+0000 I INDEX    [conn8] build index on: a2.acl_allows_gleaner/games/:gameId/versions/:versionId/sessions/my properties: { v: 1, key: { _bucketname: 1, key: 1 }, name: "_bucketname_1_key_1", ns: "a2.acl_allows_gleaner/games/:gameId/versions/:versionId/sessions/my" }
+2016-01-21T10:22:14.209+0000 I INDEX    [conn8] 	 building index using bulk method
+2016-01-21T10:22:14.209+0000 I INDEX    [conn8] build index done.  scanned 1 total records. 0 secs
+2016-01-21T10:22:14.215+0000 I INDEX    [conn11] build index on: a2.acl_allows_gleaner/sessions/:sessionId/results properties: { v: 1, key: { _bucketname: 1, key: 1 }, name: "_bucketname_1_key_1", ns: "a2.acl_allows_gleaner/sessions/:sessionId/results" }
+2016-01-21T10:22:14.216+0000 I INDEX    [conn11] 	 building index using bulk method
+2016-01-21T10:22:14.216+0000 I INDEX    [conn11] build index done.  scanned 1 total records. 0 secs
+2016-01-21T10:22:14.222+0000 I INDEX    [conn8] build index on: a2.acl_allows_gleaner/sessions/:sessionId properties: { v: 1, key: { _bucketname: 1, key: 1 }, name: "_bucketname_1_key_1", ns: "a2.acl_allows_gleaner/sessions/:sessionId" }
+2016-01-21T10:22:14.222+0000 I INDEX    [conn8] 	 building index using bulk method
+2016-01-21T10:22:14.222+0000 I INDEX    [conn8] build index done.  scanned 1 total records. 0 secs
+2016-01-21T10:22:14.254+0000 I INDEX    [conn11] build index on: a2.acl_allows_gleaner/sessions/:sessionId/remove properties: { v: 1, key: { _bucketname: 1, key: 1 }, name: "_bucketname_1_key_1", ns: "a2.acl_allows_gleaner/sessions/:sessionId/remove" }
+2016-01-21T10:22:14.254+0000 I INDEX    [conn11] 	 building index using bulk method
+2016-01-21T10:22:14.255+0000 I INDEX    [conn11] build index done.  scanned 1 total records. 0 secs
+2016-01-21T10:22:14.260+0000 I INDEX    [conn9] build index on: a2.acl_allows_gleaner/sessions/:sessionId/results/:resultsId properties: { v: 1, key: { _bucketname: 1, key: 1 }, name: "_bucketname_1_key_1", ns: "a2.acl_allows_gleaner/sessions/:sessionId/results/:resultsId" }
+2016-01-21T10:22:14.260+0000 I INDEX    [conn9] 	 building index using bulk method
+2016-01-21T10:22:14.261+0000 I INDEX    [conn9] build index done.  scanned 1 total records. 0 secs
+2016-01-21T10:22:14.272+0000 I INDEX    [conn11] build index on: a2.acl_allows_gleaner/games/:gameId/versions/:versionId/sessions properties: { v: 1, key: { _bucketname: 1, key: 1 }, name: "_bucketname_1_key_1", ns: "a2.acl_allows_gleaner/games/:gameId/versions/:versionId/sessions" }
+2016-01-21T10:22:14.272+0000 I INDEX    [conn11] 	 building index using bulk method
+2016-01-21T10:22:14.273+0000 I INDEX    [conn11] build index done.  scanned 1 total records. 0 secs
+2016-01-21T10:22:14.281+0000 I INDEX    [conn9] build index on: a2.acl_allows_gleaner/sessions/:sessionId/event/:event properties: { v: 1, key: { _bucketname: 1, key: 1 }, name: "_bucketname_1_key_1", ns: "a2.acl_allows_gleaner/sessions/:sessionId/event/:event" }
+2016-01-21T10:22:14.281+0000 I INDEX    [conn9] 	 building index using bulk method
+2016-01-21T10:22:14.282+0000 I INDEX    [conn9] build index done.  scanned 1 total records. 0 secs
+2016-01-21T10:22:14.292+0000 I INDEX    [conn11] build index on: a2.acl_allows_gleaner/games/my properties: { v: 1, key: { _bucketname: 1, key: 1 }, name: "_bucketname_1_key_1", ns: "a2.acl_allows_gleaner/games/my" }
+2016-01-21T10:22:14.292+0000 I INDEX    [conn11] 	 building index using bulk method
+2016-01-21T10:22:14.293+0000 I INDEX    [conn11] build index done.  scanned 1 total records. 0 secs
+2016-01-21T10:22:14.296+0000 I INDEX    [conn9] build index on: a2.acl_allows_gleaner/games/:gameId properties: { v: 1, key: { _bucketname: 1, key: 1 }, name: "_bucketname_1_key_1", ns: "a2.acl_allows_gleaner/games/:gameId" }
+2016-01-21T10:22:14.296+0000 I INDEX    [conn9] 	 building index using bulk method
+2016-01-21T10:22:14.296+0000 I INDEX    [conn9] build index done.  scanned 1 total records. 0 secs
+2016-01-21T10:22:14.358+0000 I INDEX    [conn8] build index on: a2.acl_allows_gleaner/games properties: { v: 1, key: { _bucketname: 1, key: 1 }, name: "_bucketname_1_key_1", ns: "a2.acl_allows_gleaner/games" }
+2016-01-21T10:22:14.358+0000 I INDEX    [conn8] 	 building index using bulk method
+2016-01-21T10:22:14.358+0000 I INDEX    [conn8] build index done.  scanned 1 total records. 0 secs
+2016-01-21T10:22:17.358+0000 I NETWORK  [initandlisten] connection accepted from 172.18.0.15:60903 #12 (6 connections now open)
+2016-01-21T10:22:17.375+0000 I NETWORK  [conn12] end connection 172.18.0.15:60903 (5 connections now open)
+2016-01-21T10:22:17.395+0000 I NETWORK  [initandlisten] connection accepted from 172.18.0.15:60904 #13 (6 connections now open)
+2016-01-21T10:22:17.396+0000 I NETWORK  [initandlisten] connection accepted from 172.18.0.15:60905 #14 (7 connections now open)
+2016-01-21T10:22:17.401+0000 I NETWORK  [initandlisten] connection accepted from 172.18.0.15:60906 #15 (8 connections now open)
+2016-01-21T10:22:17.401+0000 I NETWORK  [initandlisten] connection accepted from 172.18.0.15:60907 #16 (9 connections now open)
+2016-01-21T10:22:17.401+0000 I NETWORK  [initandlisten] connection accepted from 172.18.0.15:60908 #17 (10 connections now open)

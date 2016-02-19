@@ -198,7 +198,7 @@ function get_composition_and_containers() {
   BASE="https://raw.githubusercontent.com/e-ucm/rage-analytics/"
   COMPOSE_YML="${BASE}master/docker-compose.yml"
   EXTENSION_YML="${BASE}master/${COMPOSE_FILE}"
-  wget ${COMPOSE_YML} -O docker-compose.yml  
+  #  wget ${COMPOSE_YML} -O docker-compose.yml  
   recho "      Downloading images"
   recho "-------------------------------"
   show_and_do ${COMPOSE_COMMAND} pull
@@ -321,6 +321,8 @@ function start() {
   launch_and_wait 5 back front
   wait_for_service back 3300 'RAGE Analytics Backend'
   wait_for_service front 3350 'RAGE Analytics Frontend'
+
+  launch_and_wait 1 nginx
   
   recho " * use '$0 logs <service>' to inspect service logs"
   recho " * use '$0 status' to see status of all services"
