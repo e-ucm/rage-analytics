@@ -32,7 +32,7 @@ elastic:
 # Kafka (A scalable queue) + Zookeeper (Distributed conf. service)
 # as of 2015.11 -- kafka:0.8.2.1, zookeeper:3.4.5+dfsg-2
 kzk:
-    image: spotify/kafka
+    image: eucm/kzk
     container_name: "kzk"
     volumes:
       - "./data/zookeeper:/var/lib/zookeeper"
