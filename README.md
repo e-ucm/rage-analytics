@@ -59,6 +59,10 @@ Other servers, exposed by default but which would be firewalled of in a producti
 
 Exposed ports can be easily altered by modifying `docker-compose.yml` (eg.: changing the `ui` port to `8082:8081`) would expose `nimbus-ui` in `8082` instead of its currently exposed port, `8081`.
 
+The following diagram displays the launch order of the containers as well as the dependencies between them.
+
+![docker containers and dependencies in rage-analytics](https://cloud.githubusercontent.com/assets/5658058/14140714/fb5b18d8-f67a-11e5-9b9c-41efd9277ee1.png)
+
 ## Troubleshooting
 
 The `report` command generates a text file with information that can help us diagnose any problems during installation or execution. It does not include any personally-identifiable [information](https://github.com/e-ucm/rage-analytics/blob/master/rage-analytics.sh) (in particular, neither your machine's public IP  nor your username is included; although we do want to know if you are running it as root or using a `docker` group).
