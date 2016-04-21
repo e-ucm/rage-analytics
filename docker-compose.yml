@@ -30,7 +30,7 @@ elastic:
       - "./data/elastic:/usr/share/elasticsearch/data"
 
 # Kafka (A scalable queue) + Zookeeper (Distributed conf. service)
-# as of 2015.11 -- kafka:0.8.2.1, zookeeper:3.4.5+dfsg-2
+# as of 2015.11 -- kafka:0.8.2.2, zookeeper:3.4.5+dfsg-2
 kzk:
     image: eucm/kzk
     container_name: "kzk"
@@ -100,7 +100,7 @@ a2:
 
 # Generates RealTime analytics jar, used in Analytics Backend
 realtime:
-    image: eucm/rage-analytics-realtime
+    image: eucm/rage-analytics-realtime:1.0.0
 
 # Analytics Backend
 # (SISA asset: Server-side Interaction Storage & Analytics)
