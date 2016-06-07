@@ -304,16 +304,18 @@ function start() {
   # ensure data-dirs exist; 'purge' may have removed them
   mkdir -p data/{elastic,kafka,mongo,redis,zookeeper} >/dev/null 2>&1
   
-  launch_and_wait 5 mongo redis elastic kzk realtime
+  launch_and_wait 5 mongo redis elastic elastic5 kzk realtime
   wait_for_service redis 6379 'Redis'
-  wait_for_service elastic 9300 'ElasticSearch'
+  wait_for_service elastic 9317 'ElasticSearch'
+  wait_for_service elastic5 9300 'ElasticSearch 5'
   wait_for_service kzk 9092 'Apache Kafka'
   wait_for_service kzk 2181 'Apache ZooKeeper'
   wait_for_service mongo 27017 'MongoDB'
   
-  launch_and_wait 5 nimbus lrs
+  launch_and_wait 5 nimbus lrs kibana
   wait_for_service nimbus 6627 'Apache Storm - Nimbus'
   wait_for_service lrs 8080 'Apereo OpenLRS'
+  wait_for_service kibana 5601 'Kibana'
   
   launch_and_wait 5 a2 supervisor ui
   wait_for_service a2 3000 'RAGE Authentication & Authorization'
