@@ -312,19 +312,19 @@ function start() {
   wait_for_service kzk 2181 'Apache ZooKeeper'
   wait_for_service mongo 27017 'MongoDB'
   
-  launch_and_wait 5 nimbus lrs kibana
+  launch_and_wait 5 nimbus lrs
   wait_for_service nimbus 6627 'Apache Storm - Nimbus'
   wait_for_service lrs 8080 'Apereo OpenLRS'
-  wait_for_service kibana 5601 'Kibana'
   
-  launch_and_wait 5 a2 supervisor ui
+  launch_and_wait 5 a2 supervisor
   wait_for_service a2 3000 'RAGE Authentication & Authorization'
   # no problem if Storm's supervisor or ui take a bit longer
   
-  launch_and_wait 5 back front gamestorage
+  launch_and_wait 5 back front gamestorage kibana
   wait_for_service back 3300 'RAGE Analytics Backend'
   wait_for_service front 3350 'RAGE Analytics Frontend'
   wait_for_service gamestorage 3400 'RAGE Game Storage Server'
+  wait_for_service kibana 5601 'Kibana'
   
   recho " * use '$0 logs <service>' to inspect service logs"
   recho " * use '$0 status' to see status of all services"
