@@ -24,7 +24,7 @@ mongo:
 # Full-text search & analytics DB
 #     saves data to ./data/elastic
 elastic:
-    image: rotarudan/elasticsearch
+    image: eucm/elasticsearch
     container_name: "elastic"
     volumes:
       - "./data/elastic:/usr/share/elasticsearch/data"
@@ -44,10 +44,14 @@ elastic5:
         - "9300:9300"
 
 kibana:
-    image: kibana:5.0.0-alpha1
+    image: eucm/kibana
     container_name: "kibana"
     environment:
       - ELASTICSEARCH_URL=http://elastic5:9200
+      - SIGNUP_APP=true
+      - A2_API_PATH=http://a2:3000/api/
+      - MY_HOST=http://kibana:5601
+      - KIBANA_BASE_PATH=/api/proxy/kibana
     ports: 
         - "5601:5601"
 
@@ -67,7 +71,7 @@ kzk:
 # in e-ucm/dockerized-storm -- storm:0.10.0
 #    requires: kzk
 nimbus:
-    image: eucm/storm-nimbus
+    image: eucm/storm-nimbus:0.9.5
     container_name: "nimbus"
     environment:
       - KZK_PORT_2181_TCP_ADDR=kzk
@@ -80,7 +84,7 @@ nimbus:
 # in e-ucm/dockerized-storm -- storm:0.10.0
 #    requires: nimbus, kzk
 ui:
-    image: eucm/storm-ui
+    image: eucm/storm-ui:0.9.5
     container_name: "ui"
     environment:
       - KZK_PORT_2181_TCP_ADDR=kzk
@@ -93,7 +97,7 @@ ui:
 # in e-ucm/dockerized-storm -- storm:0.10.0
 #   requires: nimbus, kzk, mongo
 supervisor:
-    image: eucm/storm-supervisor
+    image: eucm/storm-supervisor:0.9.5
     container_name: "supervisor"
     environment:
       - KZK_PORT_2181_TCP_ADDR=kzk
@@ -115,7 +119,7 @@ lrs:
 # (part of SDA asset: Sever-side Dashboard & Analytics)
 #   requires: redis, mongo
 a2:
-    image: eucm/a2:1.0.1
+    image: eucm/a2:1.0.2
     container_name: "a2"
     environment:
       - REDIS_PORT=tcp://redis:6379
@@ -131,7 +135,7 @@ realtime:
 # (SISA asset: Server-side Interaction Storage & Analytics)
 #   requires: a2, kzk, lrs, mongo, nimbus
 back:
-    image: eucm/rage-analytics-backend:kibana
+    image: eucm/rage-analytics-backend:1.1.0
     container_name: "back"
     volumes_from:
       - realtime
@@ -155,7 +159,7 @@ back:
 #   requires: a2, back (accessed via a2)
 #   NOTE - a2 is assumed to be exposed at the same external IP used by front
 front:
-    image: eucm/rage-analytics-frontend:kibana
+    image: eucm/rage-analytics-frontend:1.1.0
     container_name: "front"
     ports:
         - "3350:3350"
