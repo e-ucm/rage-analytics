@@ -18,14 +18,14 @@ PROJECT_ISSUE_URL="https://github.com/e-ucm/${PROJECT_NAME}/issues/"
 COMPOSE_NET_NAME='rage'
 # external constants
 MIN_DOCKER_VERSION='1.9'
-MIN_COMPOSE_VERSION='1.5'
-INSTALL_COMPOSE_VERSION='1.5.0'
+MIN_COMPOSE_VERSION='1.7.1'
+INSTALL_COMPOSE_VERSION='1.7.1'
 DOCKER_SH_URL='https://get.docker.com/'
 DOCKER_CMD='docker'
 COMPOSE_BASE_URL='https://github.com/docker/compose/releases/download/'
 COMPOSE_INSTALL_TARGET='/usr/local/bin/docker-compose'
 # compose settings
-COMPOSE_COMMAND="docker-compose --x-networking -p ${COMPOSE_NET_NAME}"
+COMPOSE_COMMAND="docker-compose -p ${COMPOSE_NET_NAME}"
 COMPOSE_UP_FLAGS="-d --force-recreate --no-deps"
 
 # help contents
@@ -300,10 +300,7 @@ function start() {
 
   recho "       Launching images"
   recho "-------------------------------"
-  
-  # ensure data-dirs exist; 'purge' may have removed them
-  mkdir -p data/{elastic,kafka,mongo,redis,zookeeper} >/dev/null 2>&1
-  
+    
   launch_and_wait 5 mongo redis elastic elastic5 kzk realtime
   wait_for_service redis 6379 'Redis'
   wait_for_service elastic 9317 'ElasticSearch'
