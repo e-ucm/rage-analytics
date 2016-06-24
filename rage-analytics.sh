@@ -18,14 +18,14 @@ PROJECT_ISSUE_URL="https://github.com/e-ucm/${PROJECT_NAME}/issues/"
 COMPOSE_NET_NAME='rage'
 # external constants
 MIN_DOCKER_VERSION='1.9'
-MIN_COMPOSE_VERSION='1.5'
-INSTALL_COMPOSE_VERSION='1.5.0'
+MIN_COMPOSE_VERSION='1.7.1'
+INSTALL_COMPOSE_VERSION='1.7.1'
 DOCKER_SH_URL='https://get.docker.com/'
 DOCKER_CMD='docker'
 COMPOSE_BASE_URL='https://github.com/docker/compose/releases/download/'
 COMPOSE_INSTALL_TARGET='/usr/local/bin/docker-compose'
 # compose settings
-COMPOSE_COMMAND="docker-compose --x-networking -p ${COMPOSE_NET_NAME}"
+COMPOSE_COMMAND="docker-compose -p ${COMPOSE_NET_NAME}"
 COMPOSE_UP_FLAGS="-d --force-recreate --no-deps"
 
 # help contents
@@ -300,13 +300,11 @@ function start() {
 
   recho "       Launching images"
   recho "-------------------------------"
-  
-  # ensure data-dirs exist; 'purge' may have removed them
-  mkdir -p data/{elastic,kafka,mongo,redis,zookeeper} >/dev/null 2>&1
-  
-  launch_and_wait 5 mongo redis elastic kzk realtime
+    
+  launch_and_wait 5 mongo redis elastic elastic5 kzk realtime
   wait_for_service redis 6379 'Redis'
-  wait_for_service elastic 9300 'ElasticSearch'
+  wait_for_service elastic 9317 'ElasticSearch'
+  wait_for_service elastic5 9300 'ElasticSearch 5'
   wait_for_service kzk 9092 'Apache Kafka'
   wait_for_service kzk 2181 'Apache ZooKeeper'
   wait_for_service mongo 27017 'MongoDB'
@@ -315,14 +313,19 @@ function start() {
   wait_for_service nimbus 6627 'Apache Storm - Nimbus'
   wait_for_service lrs 8080 'Apereo OpenLRS'
   
-  launch_and_wait 5 a2 supervisor ui
+  launch_and_wait 5 a2 supervisor
   wait_for_service a2 3000 'RAGE Authentication & Authorization'
   # no problem if Storm's supervisor or ui take a bit longer
   
-  launch_and_wait 5 back front gamestorage
-  wait_for_service back 3300 'RAGE Analytics Backend'
+  launch_and_wait 5 kibana
+  wait_for_service kibana 5601 'Kibana'
+
+  launch_and_wait 5 front gamestorage
   wait_for_service front 3350 'RAGE Analytics Frontend'
   wait_for_service gamestorage 3400 'RAGE Game Storage Server'
+
+  launch_and_wait 5 back
+  wait_for_service back 3300 'RAGE Analytics Backend'
   
   recho " * use '$0 logs <service>' to inspect service logs"
   recho " * use '$0 status' to see status of all services"

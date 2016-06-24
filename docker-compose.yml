@@ -4,155 +4,209 @@
 #   docker v1.9+
 #   docker-compose v1.5+, running with --x-experimental-networking
 #
+version: '2'
 
-# A fast in-memory store
-#     saves data to ./data/redis
-redis:
-    image: redis:3.0
-    container_name: "redis"
-    volumes:
-      - "./data/redis:/data"
+services:
+    # A fast in-memory store
+    #     saves data to ./data/redis
+    redis:
+        image: redis:3.0
+        container_name: "redis"
+        volumes:
+            - redis-data:/data
 
-# A scalable cache
-#     saves data to ./data/mongo
-mongo:
-    image: mongo:3.0
-    container_name: "mongo"
-    volumes:
-      - "./data/mongo:/data/db"
+    # A scalable cache
+    #     saves data to ./data/mongo
+    mongo:
+        image: mongo:3.0
+        container_name: "mongo"
+        volumes:
+            - mongo-data:/data/db
 
-# Full-text search & analytics DB
-#     saves data to ./data/elastic
-elastic:
-    image: elasticsearch:1.7.3
-    container_name: "elastic"
-    volumes:
-      - "./data/elastic:/usr/share/elasticsearch/data"
+    # Full-text search & analytics DB
+    #     saves data to ./data/elastic
+    elastic:
+        image: eucm/elasticsearch
+        container_name: "elastic"
+        volumes:
+            - elastic-data:/usr/share/elasticsearch/data
+        ports: 
+            - "9217:9217"
+            - "9317:9317"
 
-# Kafka (A scalable queue) + Zookeeper (Distributed conf. service)
-# as of 2015.11 -- kafka:0.8.2.2, zookeeper:3.4.5+dfsg-2
-kzk:
-    image: eucm/kzk
-    container_name: "kzk"
-    volumes:
-      - "./data/zookeeper:/var/lib/zookeeper"
-      - "./data/kafka:/tmp/kafka-logs"
+    # Full-text search & analytics DB
+    #     saves data to ./data/elastic5
+    elastic5:
+        image: elasticsearch:5.0.0-alpha1
+        container_name: "elastic5"
+        volumes:
+            - elastic5-data:/usr/share/elasticsearch/data
+        ports: 
+            - "9200:9200"
+            - "9300:9300"
 
-# nimbus: supervises everything; talks to zookeeper
-# in e-ucm/dockerized-storm -- storm:0.10.0
-#    requires: kzk
-nimbus:
-    image: eucm/storm-nimbus
-    container_name: "nimbus"
-    environment:
-      - KZK_PORT_2181_TCP_ADDR=kzk
-      - NIMBUS_PORT_6627_TCP_ADDR=nimbus
-      - UI_PORT_8081_TCP_ADDR=ui
-    ports:
-      - "6627:6627"
+    kibana:
+        image: eucm/kibana
+        container_name: "kibana"
+        environment:
+            - ELASTICSEARCH_URL=http://elastic5:9200
+            - SIGNUP_APP=true
+            - A2_API_PATH=http://a2:3000/api/
+            - MY_HOST=http://kibana:5601
+            - KIBANA_BASE_PATH=/api/proxy/kibana
+        volumes:
+            - kibana-data:/opt/kibana/optimize
+        ports: 
+            - "5601:5601"
 
-# ui: allows access to logs
-# in e-ucm/dockerized-storm -- storm:0.10.0
-#    requires: nimbus, kzk
-ui:
-    image: eucm/storm-ui
-    container_name: "ui"
-    environment:
-      - KZK_PORT_2181_TCP_ADDR=kzk
-      - NIMBUS_PORT_6627_TCP_ADDR=nimbus
-      - UI_PORT_8081_TCP_ADDR=ui
-    ports: 
-        - "8081:8081"
+    # Kafka (A scalable queue) + Zookeeper (Distributed conf. service)
+    # as of 2015.11 -- kafka:0.8.2.1, zookeeper:3.4.5+dfsg-2
+    kzk:
+        image: eucm/kzk
+        container_name: "kzk"
+        environment:
+            - ADVERTISED_HOST=kzk
+            - ADVERTISED_PORT=9092
+        volumes:
+            - zookeeper-data:/var/lib/zookeeper
+            - kafka-data:/tmp/kafka-logs
+        ports: 
+            - "2181:2181"
+            - "9092:9092"
 
-# supervisor: supervises actual workers
-# in e-ucm/dockerized-storm -- storm:0.10.0
-#   requires: nimbus, kzk, mongo
-supervisor:
-    image: eucm/storm-supervisor
-    container_name: "supervisor"
-    environment:
-      - KZK_PORT_2181_TCP_ADDR=kzk
-      - NIMBUS_PORT_6627_TCP_ADDR=nimbus
-      - UI_PORT_8081_TCP_ADDR=ui
+    # nimbus: supervises everything; talks to zookeeper
+    # in e-ucm/dockerized-storm -- storm:0.10.0
+    #    requires: kzk
+    nimbus:
+        image: eucm/storm-nimbus:0.9.5
+        container_name: "nimbus"
+        environment:
+            - KZK_PORT_2181_TCP_ADDR=kzk
+            - NIMBUS_PORT_6627_TCP_ADDR=nimbus
+            - UI_PORT_8081_TCP_ADDR=ui
+        ports:
+            - "6627:6627"
 
-# OpenLRS, an open LRS that speaks xAPI
-#   requires: elastic, redis
-lrs:
-    image: eucm/openlrs
-    container_name: "lrs"
-    environment:
-      - REDIS_PORT_6379_TCP_ADDR=redis
-      - ELASTIC_PORT_9300_TCP=tcp://elastic:9300
-    ports:
-        - "8180:8080"
+    # ui: allows access to logs
+    # in e-ucm/dockerized-storm -- storm:0.10.0
+    #    requires: nimbus, kzk
+    ui:
+        image: eucm/storm-ui:0.9.5
+        container_name: "ui"
+        environment:
+            - KZK_PORT_2181_TCP_ADDR=kzk
+            - NIMBUS_PORT_6627_TCP_ADDR=nimbus
+            - UI_PORT_8081_TCP_ADDR=ui
+        ports: 
+            - "8081:8081"
 
-# Authentication & Authorization
-# (part of SDA asset: Sever-side Dashboard & Analytics)
-#   requires: redis, mongo
-a2:
-    image: eucm/a2:1.0.1
-    container_name: "a2"
-    environment:
-      - REDIS_PORT=tcp://redis:6379
-      - MONGO_PORT=tcp://mongo:27017
-    ports: 
-      - "3000:3000"
+    # supervisor: supervises actual workers
+    # in e-ucm/dockerized-storm -- storm:0.10.0
+    #   requires: nimbus, kzk, mongo
+    supervisor:
+        image: eucm/storm-supervisor:0.9.5
+        container_name: "supervisor"
+        environment:
+            - KZK_PORT_2181_TCP_ADDR=kzk
+            - NIMBUS_PORT_6627_TCP_ADDR=nimbus
+            - UI_PORT_8081_TCP_ADDR=ui
 
-# Generates RealTime analytics jar, used in Analytics Backend
-realtime:
-    image: eucm/rage-analytics-realtime:1.0.0
+    # OpenLRS, an open LRS that speaks xAPI
+    #   requires: elastic, redis
+    lrs:
+        image: eucm/openlrs
+        container_name: "lrs"
+        environment:
+            - REDIS_PORT_6379_TCP_ADDR=redis
+            - ELASTIC_PORT_9300_TCP=tcp://elastic:9317
+        ports:
+            - "8180:8080"
 
-# Analytics Backend
-# (SISA asset: Server-side Interaction Storage & Analytics)
-#   requires: a2, kzk, lrs, mongo, nimbus
-back:
-    image: eucm/rage-analytics-backend:1.0.1
-    container_name: "back"
-    volumes_from:
-      - realtime
-      - nimbus
-    environment:
-      - MY_HOST=back
-      - A2_PORT=tcp://a2:3000
-      - KZK_PORT=tcp://kzk:2181
-      - LRS_PORT=tcp://lrs:8080
-      - MONGO_PORT=tcp://mongo:27017
-      - NIMBUS_PORT=tcp://nimbus:6627
-      - RAGE_ANALYTICS_BACKEND_STORMPATH=/app/storm_vol/bin
-      - RAGE_ANALYTICS_BACKEND_REALTIMEJAR=/app/output/realtime-jar-with-dependencies.jar
-    ports:
-      - "3300:3300"
+    # Authentication & Authorization
+    # (part of SDA asset: Sever-side Dashboard & Analytics)
+    #   requires: redis, mongo
+    a2:
+        image: eucm/a2:1.0.2
+        container_name: "a2"
+        environment:
+            - REDIS_PORT=tcp://redis:6379
+            - MONGO_PORT=tcp://mongo:27017
+        ports: 
+            - "3000:3000"
 
-# Analytics Frontend
-# (part of SDA asset: Server-side Dashboard and Analytics)
-#   requires: a2, back (accessed via a2)
-#   NOTE - a2 is assumed to be exposed at the same external IP used by front
-front:
-    image: eucm/rage-analytics-frontend:1.0.1
-    container_name: "front"
-    ports:
-        - "3350:3350"
-    environment:
-      - MY_HOST=front
-      - A2_PORT=tcp://a2:3000
+    # Generates RealTime analytics jar, used in Analytics Backend
+    realtime:
+        image: eucm/rage-analytics-realtime
 
-# Game Storage Server
-# (SIS asset: Server-side Interaction Storage)
-#   requires: a2, mongo
-gamestorage:
-    image: eucm/rage-gamestorage-server:1.0.1
-    container_name: "gamestorage"
-    environment:
-      - MY_HOST=gamestorage
-      - A2_PORT=tcp://a2:3000
-      - MONGO_PORT=tcp://mongo:27017
-    ports:
-      - "3400:3400"
+    # Analytics Backend
+    # (SISA asset: Server-side Interaction Storage & Analytics)
+    #   requires: a2, kzk, lrs, mongo, nimbus
+    back:
+        image: eucm/rage-analytics-backend:1.1.2
+        container_name: "back"
+        volumes_from:
+            - realtime
+            - nimbus
+        environment:
+            - MY_HOST=back
+            - A2_PORT=tcp://a2:3000
+            - KZK_PORT=tcp://kzk:2181
+            - LRS_PORT=tcp://lrs:8080
+            - MONGO_PORT=tcp://mongo:27017
+            - NIMBUS_PORT=tcp://nimbus:6627
+            - ELASTICSEARCH_PORT=tcp://elastic5:9200
+            - RAGE_ANALYTICS_BACKEND_STORMPATH=/app/storm_vol/bin
+            - RAGE_ANALYTICS_BACKEND_REALTIMEJAR=/app/output/realtime-jar-with-dependencies.jar
+            - RAGE_ANALYTICS_BACKEND_ANALYSISFOLDER=/app/analysis/
+        ports:
+            - "3300:3300"
 
-# LostInSpace, a sample game with tracking enabled
-#   http://<ip>:9090/setup to set it up, and
-#   http://<ip>:9090/1 to access the 1st game (and so on)
-lis:
-    image: eucm/lostinspace
-    ports:
-        - "9090:9090"
+    # Analytics Frontend
+    # (part of SDA asset: Server-side Dashboard and Analytics)
+    #   requires: a2, back (accessed via a2)
+    #   NOTE - a2 is assumed to be exposed at the same external IP used by front
+    front:
+        image: eucm/rage-analytics-frontend:1.1.2
+        container_name: "front"
+        ports:
+            - "3350:3350"
+        environment:
+            - MY_HOST=front
+            - A2_PORT=tcp://a2:3000
+            - KIBANA_PORT=tcp://kibana:5601
+
+    # Game Storage Server
+    # (SIS asset: Server-side Interaction Storage)
+    #   requires: a2, mongo
+    gamestorage:
+        image: eucm/rage-gamestorage-server:1.0.1
+        container_name: "gamestorage"
+        environment:
+            - MY_HOST=gamestorage
+            - A2_PORT=tcp://a2:3000
+            - MONGO_PORT=tcp://mongo:27017
+        ports:
+            - "3400:3400"
+
+    # LostInSpace, a sample game with tracking enabled
+    #   http://<ip>:9090/setup to set it up, and
+    #   http://<ip>:9090/1 to access the 1st game (and so on)
+    lis:
+        image: eucm/lostinspace
+        ports:
+            - "9090:9090"
+volumes:
+    redis-data:
+        driver: local
+    mongo-data:
+        driver: local
+    elastic-data:
+        driver: local
+    elastic5-data:
+        driver: local
+    zookeeper-data:  
+        driver: local
+    kafka-data:
+        driver: local    
+    kibana-data:
+        driver: local  
