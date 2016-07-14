@@ -14,6 +14,10 @@ services:
         container_name: "redis"
         volumes:
             - redis-data:/data
+            - ./conf/redis.conf:/usr/local/etc/redis/redis.conf
+        entrypoint: /usr/local/bin/redis-server /usr/local/etc/redis/redis.conf
+        mem_limit: 256m
+        memswap_limit: 256m
 
     # A scalable cache
     #     saves data to ./data/mongo
@@ -22,6 +26,8 @@ services:
         container_name: "mongo"
         volumes:
             - mongo-data:/data/db
+        mem_limit: 512m
+        memswap_limit: 512m
 
     # Full-text search & analytics DB
     #     saves data to ./data/elastic
@@ -33,6 +39,10 @@ services:
         ports: 
             - "9217:9217"
             - "9317:9317"
+        mem_limit: 512m
+        memswap_limit: 512m
+        environment:
+            - ES_HEAP_SIZE=512m
 
     # Full-text search & analytics DB
     #     saves data to ./data/elastic5
@@ -44,6 +54,10 @@ services:
         ports: 
             - "9200:9200"
             - "9300:9300"
+        mem_limit: 512m
+        memswap_limit: 512m
+        environment:
+            - ES_HEAP_SIZE=490m
 
     kibana:
         image: eucm/kibana
@@ -58,6 +72,10 @@ services:
             - kibana-data:/opt/kibana/optimize
         ports: 
             - "5601:5601"
+        mem_limit: 128m
+        memswap_limit: 128m
+        environment:
+            - NODE_OPTS=--max_old_space_size=100
 
     # Kafka (A scalable queue) + Zookeeper (Distributed conf. service)
     # as of 2015.11 -- kafka:0.8.2.1, zookeeper:3.4.5+dfsg-2
