@@ -23,6 +23,9 @@ Our testing environment:
 
 ## Simple usage
 
+Note that before we can start using the system, we must execute the following command in Linux based systems: `sudo sysctl -w vm.max_map_count=262144`. More info can be found at the official 
+ElasticSearch configuration (documentation)[https://www.elastic.co/guide/en/elasticsearch/reference/current/setup-configuration.html#vm-max-map-count].
+
 0. Open a shell in a recent linux (we use Ubuntu 14.04+). You must be root (`sudo su -`) unless you already have `docker` running and a compatible version of `docker-compose` installed 
 1. Download the launch script: `wget https://raw.githubusercontent.com/e-ucm/rage-analytics/master/rage-analytics.sh`
 2. Mark the script as executable, and launch it: `chmod +x rage-analytics.sh && ./rage-analytics.sh launch` (note that it requires `bash` to run). Besides `launch`, the scripts accepts several other commands - use `./rage-analytics.sh --help` to see their names and descriptions.
@@ -31,21 +34,22 @@ Our testing environment:
 ... and type `./rage-analytics status` to check that everything has been launched. Expected output:
 
 ```
-     Name                    Command               State                    Ports                  
---------------------------------------------------------------------------------------------------
-a2                npm run docker-start             Up       0.0.0.0:3000->3000/tcp                 
-back              npm run docker-start             Up       0.0.0.0:3300->3300/tcp                 
-elastic           /docker-entrypoint.sh elas ...   Up       9200/tcp, 9300/tcp                     
-front             npm run docker-start             Up       0.0.0.0:3350->3350/tcp                 
-gamestorage       npm run docker-start             Up       0.0.0.0:3400->3400/tcp                 
-kzk               supervisord -n                   Up       2181/tcp, 9092/tcp                     
-lrs               ./run.sh                         Up       0.0.0.0:8180->8080/tcp                 
-mongo             /entrypoint.sh mongod            Up       27017/tcp                              
-nimbus            /bin/sh -c ./goStorm.sh nimbus   Up       0.0.0.0:6627->6627/tcp                 
-rage_realtime_1   /bin/sh -c cp ${OUTPUT_JAR ...   Exit 0                                          
-redis             /entrypoint.sh redis-server      Up       6379/tcp                               
+     Name                    Command               State                        Ports                      
+----------------------------------------------------------------------------------------------------------
+a2                npm run docker-start             Up       0.0.0.0:3000->3000/tcp                         
+back              npm run docker-start             Up       0.0.0.0:3300->3300/tcp                         
+elastic           /docker-entrypoint.sh elas ...   Up       0.0.0.0:9217->9217/tcp, 0.0.0.0:9317->9317/tcp 
+elastic5          /docker-entrypoint.sh elas ...   Up       0.0.0.0:9200->9200/tcp, 0.0.0.0:9300->9300/tcp 
+front             npm run docker-start             Up       0.0.0.0:3350->3350/tcp                         
+gamestorage       npm run docker-start             Up       0.0.0.0:3400->3400/tcp                         
+kibana            /docker-entrypoint.sh kibana     Up       0.0.0.0:5601->5601/tcp                         
+kzk               supervisord -n                   Up       0.0.0.0:2181->2181/tcp, 0.0.0.0:9092->9092/tcp 
+lrs               ./run.sh                         Up       0.0.0.0:8180->8080/tcp                         
+mongo             /entrypoint.sh mongod            Up       0.0.0.0:27017->27017/tcp                       
+nimbus            /bin/sh -c ./goStorm.sh nimbus   Up       0.0.0.0:6627->6627/tcp                         
+rage_realtime_1   /usr/local/bin/mvn-entrypo ...   Exit 0                                                  
+redis             docker-entrypoint.sh redis ...   Up       6379/tcp                                       
 supervisor        /bin/sh -c ./goStorm.sh su ...   Up       6700/tcp, 6701/tcp, 6702/tcp, 6703/tcp 
-ui                /bin/sh -c ./goStorm.sh ui       Up       0.0.0.0:8081->8081/tcp 
 ```
 
 The following services will be launched:
