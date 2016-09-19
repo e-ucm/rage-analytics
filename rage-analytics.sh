@@ -15,7 +15,8 @@ PROJECT_NAME='rage-analytics'
 PROJECT_URL="https://github.com/e-ucm/${PROJECT_NAME}"
 PROJECT_RAW_URL="https://raw.githubusercontent.com/e-ucm/${PROJECT_NAME}/"
 PROJECT_ISSUE_URL="https://github.com/e-ucm/${PROJECT_NAME}/issues/"
-COMPOSE_NET_NAME='rage'
+COMPOSE_PROJ_NAME='rage'
+COMPOSE_NET_NAME="${COMPOSE_PROJ_NAME}_default"
 # external constants
 MIN_DOCKER_VERSION='1.9'
 MIN_COMPOSE_VERSION='1.7.1'
@@ -25,7 +26,7 @@ DOCKER_CMD='docker'
 COMPOSE_BASE_URL='https://github.com/docker/compose/releases/download/'
 COMPOSE_INSTALL_TARGET='/usr/local/bin/docker-compose'
 # compose settings
-COMPOSE_COMMAND="docker-compose -p ${COMPOSE_NET_NAME}"
+COMPOSE_COMMAND="docker-compose -p ${COMPOSE_PROJ_NAME}"
 COMPOSE_UP_FLAGS="-d --force-recreate --no-deps"
 
 # help contents
@@ -243,8 +244,18 @@ function wait_for_service() {
   echo -e "\n OK - $1:$2 ($3) reachable after ${T}s"
 }
 
+function check_vm_map_ok() {
+  if (( $(sysctl vm.max_map_count | sed -e "s/.*= //") < 262144 )) ; then 
+    require_root
+    recho "Note that before we can start using the system, we must execute the following command in Linux based systems: \`sudo sysctl -w vm.max_map_count=262144\`." 
+    recho "More info can be found at the official ElasticSearch configuration (documentation)[https://www.elastic.co/guide/en/elasticsearch/reference/current/setup-configuration.html#vm-max-map-count]."
+    sysctl -w vm.max_map_count=262144
+  fi
+}
+
 # check docker running; start if not
 function check_docker_launched() {
+  check_vm_map_ok
   if ( docker info > /dev/null 2>&1 ) ; then
     recho "(docker daemon already running; this is good)"
     DOCKER_WAS_RUNNING=1
@@ -331,6 +342,8 @@ function start() {
   recho " * use '$0 status' to see status of all services"
   recho "output of '$0 status' follows:"
   display_status
+  
+  recho " * access A2 via http://<your-ip>:3000/, or the front-end via http://<your-ip>:3000/api/proxy/afront"
 }
 
 # stop containers
@@ -383,7 +396,7 @@ function display_status() {
 function display_logs() {
   recho "       Logs for $1 (Ctrl+C to exit)"
   recho "-------------------------------"
-  show_and_do ${COMPOSE_COMMAND} logs $1
+  show_and_do ${COMPOSE_COMMAND} logs -f $1
 }
 
 # enter into shell for a given container name
