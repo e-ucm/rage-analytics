@@ -335,8 +335,9 @@ function start() {
   wait_for_service front 3350 'RAGE Analytics Frontend'
   wait_for_service gamestorage 3400 'RAGE Game Storage Server'
 
-  launch_and_wait 5 back
+  launch_and_wait 5 nginx back games
   wait_for_service back 3300 'RAGE Analytics Backend'
+  wait_for_service games 3450 'RAGE Analytics Backend'
   
   recho " * use '$0 logs <service>' to inspect service logs"
   recho " * use '$0 status' to see status of all services"

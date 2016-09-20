@@ -190,6 +190,32 @@ services:
         ports:
             - "3400:3400"
 
+    # Nginx
+    nginx:
+        image: eucm/nginx-ssl-proxy
+        container_name: "nginx"
+        volumes:
+          - "/etc/letsencrypt/live/rage.e-ucm.es/fullchain.pem:/etc/secrets/proxycert"
+          - "/etc/letsencrypt/live/rage.e-ucm.es/privkey.pem:/etc/secrets/proxykey"
+          - "/etc/letsencrypt/live/rage.e-ucm.es/dh2048.pem:/etc/secrets/dhparam"
+        environment:
+          - ENABLE_SSL=true
+          - ENABLE_BASIC_AUTH=false
+          - TARGET_SERVICE=a2:3000
+        ports:
+          - "80:80"
+          - "443:443"
+
+    # Games
+    games:
+        image: eucm/rage-analytics-games
+        container_name: "games"
+        environment:
+          - MY_HOST=games
+          - A2_PORT=tcp://a2:3000
+        ports:
+          - "3450:3450"
+
 volumes:
     redis-data:
         driver: local
