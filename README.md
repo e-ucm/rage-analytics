@@ -8,6 +8,16 @@ game analytics for applied games.
 
 We rely on [docker](https://docs.docker.com/installation/) to modularize and simplify deployment; and on [docker-compose](https://docs.docker.com/compose/) to manage and orchestrate (or, dare I say, _compose_) those containers. 
 
+We usually require the [latest version of docker](https://github.com/docker/docker/releases) and a specific version of docker-compose. To see what docker-compose version we specifically require for the platform to work, check out thie [rage-analytics.sh](https://github.com/e-ucm/rage-analytics/blob/master/rage-analytics.sh#L23) file. For instalation, execute the following commands:
+
+          curl -L https://github.com/docker/compose/releases/download/[INSTALL_COMPOSE_VERSION]/docker-compose-`uname -s`-`uname -m` > /usr/local/bin/docker-compose
+          chmod +x /usr/local/bin/docker-compose
+         
+Where `[INSTALL_COMPOSE_VERSION]` is the version we require of docker-compose in the [rage-analytics.sh](https://github.com/e-ucm/rage-analytics/blob/master/rage-analytics.sh#L23) file. For instance, if the `INSTALL_COMPOSE_VERSION='1.7.1'`, the command should be:         
+
+          curl -L https://github.com/docker/compose/releases/download/1.7.1/docker-compose-`uname -s`-`uname -m` > /usr/local/bin/docker-compose
+          chmod +x /usr/local/bin/docker-compose
+
 ## Hardware and Software Requirements
 
 In theory:
@@ -18,7 +28,7 @@ In theory:
 Our testing environment:
           
 - ubuntu 14.04 and 14.10 x64, both stand-alone and running in VirtualBox VMs under Windows hosts
-- docker v1.9, docker-compose v1.5
+- docker v1.10, docker-compose v1.7.1
 - >=12 Gb free HDD space, 8 Gb RAM
 
 ## Simple usage
@@ -54,8 +64,8 @@ supervisor        /bin/sh -c ./goStorm.sh su ...   Up       6700/tcp, 6701/tcp, 
 
 The following services will be launched:
 * `a2` at `http://your-ip:3000`: running [Authentication&Authorization](https://github.com/e-ucm/a2) server. Allows registering server-side applications (such as the `rage-analytics-backend`) 
-* `back` at `http://your-ip:3300`: the [Analytics Back-end](https://github.com/e-ucm/rage-analytics-backend) server. Previously known as Gleaner-backend
-* `front` at `http://your-ip:3350`: the [Analytics Front-end](https://github.com/e-ucm/rage-analytics-frontend) server. Previously known as Gleaner-frontend
+* `back` at `http://your-ip:3000/api/proxy/gleaner/`: the [Analytics Back-end](https://github.com/e-ucm/rage-analytics-backend) server. Previously known as Gleaner-backend
+* `front` at `http://your-ip:3000/api/proxy/aftonr/`: the [Analytics Front-end](https://github.com/e-ucm/rage-analytics-frontend) server. Previously known as Gleaner-frontend
 
 Other servers, exposed by default but which would be firewalled of in a production deployment, include
 * OpenLRS at `http://your-ip:8180`
