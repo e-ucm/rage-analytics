@@ -43,7 +43,7 @@ ElasticSearch configuration (documentation)[https://www.elastic.co/guide/en/elas
 2. Mark the script as executable, and launch it: `chmod +x rage-analytics.sh && ./rage-analytics.sh launch` (note that it requires `bash` to run). Besides `launch`, the scripts accepts several other commands - use `./rage-analytics.sh --help` to see their names and descriptions.
 3. follow the instructions in the [Quickstart guide](https://github.com/e-ucm/rage-analytics/wiki/Quickstart) to learn more 
 
-... and type `./rage-analytics status` to check that everything has been launched. Expected output:
+... and type `./rage-analytics.sh status` to check that everything has been launched. Expected output:
 
 ```
      Name                    Command               State                        Ports                      
@@ -67,7 +67,7 @@ supervisor        /bin/sh -c ./goStorm.sh su ...   Up       6700/tcp, 6701/tcp, 
 The following services will be launched:
 * `a2` at `http://your-ip:3000`: running [Authentication&Authorization](https://github.com/e-ucm/a2) server. Allows registering server-side applications (such as the `rage-analytics-backend`) 
 * `back` at `http://your-ip:3000/api/proxy/gleaner/`: the [Analytics Back-end](https://github.com/e-ucm/rage-analytics-backend) server. Previously known as Gleaner-backend
-* `front` at `http://your-ip:3000/api/proxy/aftonr/`: the [Analytics Front-end](https://github.com/e-ucm/rage-analytics-frontend) server. Previously known as Gleaner-frontend
+* `front` at `http://your-ip:3000/api/proxy/afront/`: the [Analytics Front-end](https://github.com/e-ucm/rage-analytics-frontend) server. Previously known as Gleaner-frontend
 
 Other servers, exposed by default but which would be firewalled of in a production deployment, include
 * OpenLRS at `http://your-ip:8180`
