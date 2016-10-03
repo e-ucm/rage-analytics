@@ -6,14 +6,14 @@ The RAGE Analytics Environment is a key component of the [RAGE](http://rageproje
 (Realizing an Applied Game Ecosystem), in charge of providing extensible, scalable, and simple-to-manage
 game analytics for applied games.
 
-We rely on [docker](https://docs.docker.com/installation/) to modularize and simplify deployment; and on [docker-compose](https://docs.docker.com/compose/) to manage and orchestrate (or, dare I say, _compose_) those containers. 
+We rely on [docker](https://docs.docker.com/installation/) to modularize and simplify deployment; and on [docker-compose](https://docs.docker.com/compose/install/) to manage and orchestrate (or, dare I say, _compose_) those containers. 
 
-We usually require the [latest version of docker](https://github.com/docker/docker/releases) and a specific version of docker-compose. To see what docker-compose version we specifically require for the platform to work, check out thie [rage-analytics.sh](https://github.com/e-ucm/rage-analytics/blob/master/rage-analytics.sh#L23) file. For instalation, execute the following commands:
+We usually require the [latest version of docker](https://github.com/docker/docker/releases) and a specific version of docker-compose. To see what docker-compose version we specifically require for the platform to work, check out the [rage-analytics.sh](https://github.com/e-ucm/rage-analytics/blob/master/rage-analytics.sh#L23) file. For instalation, execute the following commands:
 
           curl -L https://github.com/docker/compose/releases/download/[INSTALL_COMPOSE_VERSION]/docker-compose-`uname -s`-`uname -m` > /usr/local/bin/docker-compose
           chmod +x /usr/local/bin/docker-compose
          
-Where `[INSTALL_COMPOSE_VERSION]` is the version we require of docker-compose in the [rage-analytics.sh](https://github.com/e-ucm/rage-analytics/blob/master/rage-analytics.sh#L23) file. For instance, if the `INSTALL_COMPOSE_VERSION='1.7.1'`, the command should be:         
+Where `[INSTALL_COMPOSE_VERSION]` is the version we require of docker-compose in the [rage-analytics.sh](https://github.com/e-ucm/rage-analytics/blob/master/rage-analytics.sh#L23) file. For instance, if we currently require `INSTALL_COMPOSE_VERSION='1.7.1'`, the command should be:         
 
           curl -L https://github.com/docker/compose/releases/download/1.7.1/docker-compose-`uname -s`-`uname -m` > /usr/local/bin/docker-compose
           chmod +x /usr/local/bin/docker-compose
