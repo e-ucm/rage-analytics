@@ -20,15 +20,17 @@ Where `[INSTALL_COMPOSE_VERSION]` is the version we require of docker-compose in
 
 ## Hardware and Software Requirements
 
-In theory:
+In theory, only requirements are:
 
-- anywhere with docker v1.7 (or greater) and docker-compose v1.4.2 (or greater) installed 
-- >=12 Gb free HDD space, 4 Gb RAM. Note that one of the services, MongoDB, requires 3.4 Gb free HDD space to run.
+- docker installed, minimum required version specified in the [rage-analytics.sh](https://github.com/e-ucm/rage-analytics/blob/master/rage-analytics.sh#L21) file
+- docker-compose installed, required version specified in the [rage-analytics.sh](https://github.com/e-ucm/rage-analytics/blob/master/rage-analytics.sh#L23) file
+- >=12 Gb free HDD space, 4 Gb RAM. Note that one of the services, MongoDB, requires 3.4 Gb free HDD space to run
 
 Our testing environment:
           
 - ubuntu 14.04 and 14.10 x64, both stand-alone and running in VirtualBox VMs under Windows hosts
-- docker v1.10, docker-compose v1.7.1
+- docker v1.10
+- docker-compose v1.7.1
 - >=12 Gb free HDD space, 8 Gb RAM
 
 ## Simple usage
