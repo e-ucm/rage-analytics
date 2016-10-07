@@ -47,6 +47,7 @@ services:
             - "9200:9200"
             - "9300:9300"
 
+    # Kibana 5.0.0-alpha5
     kibana:
         image: eucm/kibana
         container_name: "kibana"
@@ -62,25 +63,22 @@ services:
             - "5601:5601"
 
     # Kafka (A scalable queue) + Zookeeper (Distributed conf. service)
-    # as of 2015.11 -- kafka:0.8.2.1, zookeeper:3.4.5+dfsg-2
+    # as of 2016.10 -- kafka:0.10.0.1, zookeeper:3.4.5+dfsg-2
     kzk:
-        image: eucm/kzk
+        image: eucm/kzk:0.10.0.1
         container_name: "kzk"
         environment:
             - ADVERTISED_HOST=kzk
             - ADVERTISED_PORT=9092
-        volumes:
-            - zookeeper-data:/var/lib/zookeeper
-            - kafka-data:/tmp/kafka-logs
         ports: 
             - "2181:2181"
             - "9092:9092"
 
     # nimbus: supervises everything; talks to zookeeper
-    # in e-ucm/dockerized-storm -- storm:0.10.0
+    # in e-ucm/dockerized-storm -- storm:1.0.2
     #    requires: kzk
     nimbus:
-        image: eucm/storm-nimbus:0.9.5
+        image: eucm/storm-nimbus:1.0.2
         container_name: "nimbus"
         environment:
             - KZK_PORT_2181_TCP_ADDR=kzk
@@ -90,10 +88,10 @@ services:
             - "6627:6627"
 
     # ui: allows access to logs
-    # in e-ucm/dockerized-storm -- storm:0.10.0
+    # in e-ucm/dockerized-storm -- storm:1.0.2
     #    requires: nimbus, kzk
     ui:
-        image: eucm/storm-ui:0.9.5
+        image: eucm/storm-ui:1.0.2
         container_name: "ui"
         environment:
             - KZK_PORT_2181_TCP_ADDR=kzk
@@ -103,10 +101,10 @@ services:
             - "8081:8081"
 
     # supervisor: supervises actual workers
-    # in e-ucm/dockerized-storm -- storm:0.10.0
+    # in e-ucm/dockerized-storm -- storm:1.0.2
     #   requires: nimbus, kzk, mongo
     supervisor:
-        image: eucm/storm-supervisor:0.9.5
+        image: eucm/storm-supervisor:1.0.2
         container_name: "supervisor"
         environment:
             - KZK_PORT_2181_TCP_ADDR=kzk
@@ -138,13 +136,13 @@ services:
 
     # Generates RealTime analytics jar, used in Analytics Backend
     realtime:
-        image: eucm/rage-analytics-realtime:1.2.0
+        image: eucm/rage-analytics-realtime:1.2.1
 
     # Analytics Backend
     # (SISA asset: Server-side Interaction Storage & Analytics)
     #   requires: a2, kzk, lrs, mongo, nimbus
     back:
-        image: eucm/rage-analytics-backend:1.2.0
+        image: eucm/rage-analytics-backend:1.2.1
         container_name: "back"
         volumes_from:
             - realtime
@@ -160,6 +158,8 @@ services:
             - RAGE_ANALYTICS_BACKEND_STORMPATH=/app/storm_vol/bin
             - RAGE_ANALYTICS_BACKEND_REALTIMEJAR=/app/output/realtime-jar-with-dependencies.jar
             - RAGE_ANALYTICS_BACKEND_ANALYSISFOLDER=/app/analysis/
+        volumes:
+            - back-data:/app/analysis
         ports:
             - "3300:3300"
 
@@ -199,9 +199,7 @@ volumes:
         driver: local
     elastic5-data:
         driver: local
-    zookeeper-data:  
-        driver: local
-    kafka-data:
-        driver: local    
+    back-data:  
+        driver: local   
     kibana-data:
         driver: local  
