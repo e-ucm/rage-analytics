@@ -301,6 +301,8 @@ function install() {
 # start containers
 function start() {
  
+  mkdir -p data/{elastic,elastic5,mongo,redis} >/dev/null 2>&1  
+
   composeVersion=$(docker-compose -v)
   IFS=', ' read -r -a array <<< "$composeVersion"
 

@@ -13,7 +13,7 @@ services:
         image: redis:3.0
         container_name: "redis"
         volumes:
-            - redis-data:/data
+            - ./data/redis:/data
 
     # A scalable cache
     #     saves data to ./data/mongo
@@ -21,7 +21,7 @@ services:
         image: mongo:3.0
         container_name: "mongo"
         volumes:
-            - mongo-data:/data/db
+            - ./data/mongo:/data/db
 
     # Full-text search & analytics DB
     #     saves data to ./data/elastic
@@ -29,7 +29,7 @@ services:
         image: eucm/elasticsearch
         container_name: "elastic"
         volumes:
-            - elastic-data:/usr/share/elasticsearch/data
+            - ./data/elastic:/usr/share/elasticsearch/data
         ports: 
             - "9217:9217"
             - "9317:9317"
@@ -42,7 +42,7 @@ services:
         environment:
             - ES_JAVA_OPTS=-Xms2g -Xmx2g
         volumes:
-            - elastic5-data:/usr/share/elasticsearch/data
+            - ./data/elastic5:/usr/share/elasticsearch/data
         ports: 
             - "9200:9200"
             - "9300:9300"
@@ -126,7 +126,7 @@ services:
     # (part of SDA asset: Sever-side Dashboard & Analytics)
     #   requires: redis, mongo
     a2:
-        image: eucm/a2:1.0.3
+        image: eucm/a2:1.1.0
         container_name: "a2"
         environment:
             - REDIS_PORT=tcp://redis:6379
@@ -142,7 +142,7 @@ services:
     # (SISA asset: Server-side Interaction Storage & Analytics)
     #   requires: a2, kzk, lrs, mongo, nimbus
     back:
-        image: eucm/rage-analytics-backend:1.2.1
+        image: eucm/rage-analytics-backend:1.3.0
         container_name: "back"
         volumes_from:
             - realtime
@@ -159,7 +159,7 @@ services:
             - RAGE_ANALYTICS_BACKEND_REALTIMEJAR=/app/output/realtime-jar-with-dependencies.jar
             - RAGE_ANALYTICS_BACKEND_ANALYSISFOLDER=/app/analysis/
         volumes:
-            - back-data:/app/analysis
+            - ./data/back:/app/analysis
         ports:
             - "3300:3300"
 
@@ -168,7 +168,7 @@ services:
     #   requires: a2, back (accessed via a2)
     #   NOTE - a2 is assumed to be exposed at the same external IP used by front
     front:
-        image: eucm/rage-analytics-frontend:1.2.0
+        image: eucm/rage-analytics-frontend:1.3.0
         container_name: "front"
         ports:
             - "3350:3350"
@@ -188,18 +188,7 @@ services:
             - A2_PORT=tcp://a2:3000
             - MONGO_PORT=tcp://mongo:27017
         ports:
-            - "3400:3400"
-
+            - "3400:3400" 
 volumes:
-    redis-data:
-        driver: local
-    mongo-data:
-        driver: local
-    elastic-data:
-        driver: local
-    elastic5-data:
-        driver: local
-    back-data:  
-        driver: local   
     kibana-data:
-        driver: local  
+        driver: local
