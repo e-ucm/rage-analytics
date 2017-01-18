@@ -189,6 +189,27 @@ services:
             - MONGO_PORT=tcp://mongo:27017
         ports:
             - "3400:3400" 
+
+    limesurvey:
+        image:
+            crramirez/limesurvey:latest
+        container_name: "limesurvey"
+        ports:
+            - "80:80"
+        volumes:
+            - ./data/mysql:/var/lib/mysql
+            - ./data/limesurvey:/app/upload
+
+    surveymanager:
+        image: eucm/surveymanager
+        container_name: "surveymanager"
+        environment:
+            - MY_HOST=surveymanager
+            - A2_PORT=tcp://a2:3000
+            - MONGO_PORT=tcp://mongo:27017
+            - LIMESURVEY_PORT=tcp://limesurvey:80
+        ports:
+            - "4000:4000" 
 volumes:
     kibana-data:
         driver: local

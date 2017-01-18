@@ -301,7 +301,7 @@ function install() {
 # start containers
 function start() {
  
-  mkdir -p data/{elastic,elastic5,mongo,redis} >/dev/null 2>&1  
+  mkdir -p data/{elastic,elastic5,mongo,redis,mysql,limesurvey} >/dev/null 2>&1  
 
   composeVersion=$(docker-compose -v)
   IFS=', ' read -r -a array <<< "$composeVersion"
@@ -339,6 +339,12 @@ function start() {
 
   launch_and_wait 5 back
   wait_for_service back 3300 'RAGE Analytics Backend'
+
+  launch_and_wait 5 limesurvey
+  wait_for_service limesurvey 80 'Limesurvey'
+
+  launch_and_wait 5 surveymanager
+  wait_for_service surveymanager 4000 'Survey Manager'
   
   recho " * use '$0 logs <service>' to inspect service logs"
   recho " * use '$0 status' to see status of all services"
