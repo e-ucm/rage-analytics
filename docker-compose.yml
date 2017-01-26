@@ -142,7 +142,7 @@ services:
     # (SISA asset: Server-side Interaction Storage & Analytics)
     #   requires: a2, kzk, lrs, mongo, nimbus
     back:
-        image: eucm/rage-analytics-backend:1.3.0
+        image: eucm/rage-analytics-backend:1.3.1
         container_name: "back"
         volumes_from:
             - realtime
