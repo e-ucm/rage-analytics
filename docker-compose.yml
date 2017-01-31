@@ -14,6 +14,7 @@ services:
         container_name: "redis"
         volumes:
             - ./data/redis:/data
+        mem_limit: 1g
 
     # A scalable cache
     #     saves data to ./data/mongo
@@ -22,12 +23,16 @@ services:
         container_name: "mongo"
         volumes:
             - ./data/mongo:/data/db
+        mem_limit: 1g
 
     # Full-text search & analytics DB
     #     saves data to ./data/elastic
     elastic:
         image: eucm/elasticsearch
         container_name: "elastic"
+        environment:
+            - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+        mem_limit: 1g
         volumes:
             - ./data/elastic:/usr/share/elasticsearch/data
         ports: 
@@ -40,7 +45,8 @@ services:
         image: elasticsearch:5.0.0-alpha5
         container_name: "elastic5"
         environment:
-            - ES_JAVA_OPTS=-Xms2g -Xmx2g
+            - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+        mem_limit: 1g
         volumes:
             - ./data/elastic5:/usr/share/elasticsearch/data
         ports: 
@@ -57,6 +63,7 @@ services:
             - A2_API_PATH=http://a2:3000/api/
             - MY_HOST=http://kibana:5601
             - KIBANA_BASE_PATH=/api/proxy/kibana
+        mem_limit: 1g
         volumes:
             - kibana-data:/usr/share/kibana/optimize/
         ports: 
@@ -70,6 +77,8 @@ services:
         environment:
             - ADVERTISED_HOST=kzk
             - ADVERTISED_PORT=9092
+            - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+        mem_limit: 1g
         ports: 
             - "2181:2181"
             - "9092:9092"
@@ -84,6 +93,8 @@ services:
             - KZK_PORT_2181_TCP_ADDR=kzk
             - NIMBUS_PORT_6627_TCP_ADDR=nimbus
             - UI_PORT_8081_TCP_ADDR=ui
+            - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+        mem_limit: 1g
         ports:
             - "6627:6627"
 
@@ -97,6 +108,8 @@ services:
             - KZK_PORT_2181_TCP_ADDR=kzk
             - NIMBUS_PORT_6627_TCP_ADDR=nimbus
             - UI_PORT_8081_TCP_ADDR=ui
+            - "ES_JAVA_OPTS=-Xms256m -Xmx256m"
+        mem_limit: 512m
         ports: 
             - "8081:8081"
 
@@ -110,6 +123,8 @@ services:
             - KZK_PORT_2181_TCP_ADDR=kzk
             - NIMBUS_PORT_6627_TCP_ADDR=nimbus
             - UI_PORT_8081_TCP_ADDR=ui
+            - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+        mem_limit: 1g
 
     # OpenLRS, an open LRS that speaks xAPI
     #   requires: elastic, redis
@@ -119,6 +134,8 @@ services:
         environment:
             - REDIS_PORT_6379_TCP_ADDR=redis
             - ELASTIC_PORT_9300_TCP=tcp://elastic:9317
+            - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+        mem_limit: 1g
         ports:
             - "8180:8080"
 
@@ -131,6 +148,7 @@ services:
         environment:
             - REDIS_PORT=tcp://redis:6379
             - MONGO_PORT=tcp://mongo:27017
+        mem_limit: 1g
         ports: 
             - "3000:3000"
 
@@ -158,6 +176,7 @@ services:
             - RAGE_ANALYTICS_BACKEND_STORMPATH=/app/storm_vol/bin
             - RAGE_ANALYTICS_BACKEND_REALTIMEJAR=/app/output/realtime-jar-with-dependencies.jar
             - RAGE_ANALYTICS_BACKEND_ANALYSISFOLDER=/app/analysis/
+        mem_limit: 1g
         volumes:
             - ./data/back:/app/analysis
         ports:
@@ -176,6 +195,7 @@ services:
             - MY_HOST=front
             - A2_PORT=tcp://a2:3000
             - KIBANA_PORT=tcp://kibana:5601
+        mem_limit: 1g
 
     # Game Storage Server
     # (SIS asset: Server-side Interaction Storage)
@@ -189,6 +209,7 @@ services:
             - MONGO_PORT=tcp://mongo:27017
         ports:
             - "3400:3400" 
+        mem_limit: 1g
 volumes:
     kibana-data:
         driver: local
