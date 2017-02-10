@@ -57,6 +57,8 @@ services:
             - A2_API_PATH=http://a2:3000/api/
             - MY_HOST=http://kibana:5601
             - KIBANA_BASE_PATH=/api/proxy/kibana
+            - KIBANA_A2ADMINPASSWORD=${ROOT_PASS}
+
         volumes:
             - kibana-data:/usr/share/kibana/optimize/
         ports: 
@@ -131,6 +133,7 @@ services:
         environment:
             - REDIS_PORT=tcp://redis:6379
             - MONGO_PORT=tcp://mongo:27017
+            - A2_ROOTPASSWORD=${ROOT_PASS}
         ports: 
             - "3000:3000"
 
@@ -158,6 +161,7 @@ services:
             - RAGE_ANALYTICS_BACKEND_STORMPATH=/app/storm_vol/bin
             - RAGE_ANALYTICS_BACKEND_REALTIMEJAR=/app/output/realtime-jar-with-dependencies.jar
             - RAGE_ANALYTICS_BACKEND_ANALYSISFOLDER=/app/analysis/
+            - RAGE_ANALYTICS_BACKEND_A2ADMINPASSWORD=${ROOT_PASS}
         volumes:
             - ./data/back:/app/analysis
         ports:
@@ -176,6 +180,7 @@ services:
             - MY_HOST=front
             - A2_PORT=tcp://a2:3000
             - KIBANA_PORT=tcp://kibana:5601
+            - RAGE_ANALYTICS_FRONTEND_A2ADMINPASSWORD=${ROOT_PASS}
 
     # Game Storage Server
     # (SIS asset: Server-side Interaction Storage)
@@ -187,6 +192,7 @@ services:
             - MY_HOST=gamestorage
             - A2_PORT=tcp://a2:3000
             - MONGO_PORT=tcp://mongo:27017
+            - RAGE_GAMESTORAGE_A2ADMINPASSWORD=${ROOT_PASS}
         ports:
             - "3400:3400" 
 volumes:
