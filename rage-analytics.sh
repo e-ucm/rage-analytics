@@ -10,6 +10,8 @@
 #   (http://www.apache.org/licenses/LICENSE-2.0)
 # Last revised 2015/26/11
 
+# root-password file (will be created if not found)
+ROOT_PASS_FILE='.env'
 # project-related constants
 PROJECT_NAME='rage-analytics'
 PROJECT_URL="https://github.com/e-ucm/${PROJECT_NAME}"
@@ -300,6 +302,14 @@ function install() {
 
 # start containers
 function start() {
+ 
+  if [ ! -f $ROOT_PASS_FILE ] ; then
+    recho "No password-file found; creating random password-file in $ROOT_PASS_FILE ..."
+    echo -n "ROOT_PASS=" > $ROOT_PASS_FILE
+    cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1 >> $ROOT_PASS_FILE
+  fi
+  recho "       Using password file: $ROOT_PASS_FILE"
+  recho "-------------------------------"
  
   mkdir -p data/{elastic,elastic5,mongo,redis} >/dev/null 2>&1  
 
