@@ -49,7 +49,7 @@ services:
 
     # Kibana 5.0.0-alpha5
     kibana:
-        image: eucm/kibana
+        image: eucm/kibana:5.0.0-alpha5
         container_name: "kibana"
         environment:
             - ELASTICSEARCH_URL=http://elastic5:9200
