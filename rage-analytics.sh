@@ -311,7 +311,8 @@ function start() {
   recho "       Using password file: $ROOT_PASS_FILE"
   recho "-------------------------------"
  
-  mkdir -p data/{elastic,elastic5,mongo,redis} >/dev/null 2>&1  
+  mkdir -p data/{back,elastic,elastic5,mongo,redis} >/dev/null 2>&1 
+  chmod 777 -R data/ 
 
   composeVersion=$(docker-compose -v)
   IFS=', ' read -r -a array <<< "$composeVersion"
