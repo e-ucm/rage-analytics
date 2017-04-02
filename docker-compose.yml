@@ -49,7 +49,7 @@ services:
 
     # Kibana 5.0.0-alpha5
     kibana:
-        image: eucm/kibana:5.0.0-alpha5
+        image: eucm/kibana:latest
         container_name: "kibana"
         environment:
             - ELASTICSEARCH_URL=http://elastic5:9200
@@ -128,7 +128,7 @@ services:
     # (part of SDA asset: Sever-side Dashboard & Analytics)
     #   requires: redis, mongo
     a2:
-        image: eucm/a2:1.1.0
+        image: eucm/a2:latest
         container_name: "a2"
         environment:
             - REDIS_PORT=tcp://redis:6379
@@ -139,13 +139,13 @@ services:
 
     # Generates RealTime analytics jar, used in Analytics Backend
     realtime:
-        image: eucm/rage-analytics-realtime:1.2.1
+        image: eucm/rage-analytics-realtime:hull-pilot
 
     # Analytics Backend
     # (SISA asset: Server-side Interaction Storage & Analytics)
     #   requires: a2, kzk, lrs, mongo, nimbus
     back:
-        image: eucm/rage-analytics-backend:1.3.1
+        image: eucm/rage-analytics-backend:latest
         container_name: "back"
         volumes_from:
             - realtime
@@ -172,7 +172,7 @@ services:
     #   requires: a2, back (accessed via a2)
     #   NOTE - a2 is assumed to be exposed at the same external IP used by front
     front:
-        image: eucm/rage-analytics-frontend:1.3.1
+        image: eucm/rage-analytics-frontend:latest
         container_name: "front"
         ports:
             - "3350:3350"
