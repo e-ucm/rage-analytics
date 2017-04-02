@@ -186,7 +186,7 @@ services:
     # (SIS asset: Server-side Interaction Storage)
     #   requires: a2, mongo
     gamestorage:
-        image: eucm/rage-gamestorage-server:1.0.1
+        image: eucm/rage-gamestorage-server:1.0.2
         container_name: "gamestorage"
         environment:
             - MY_HOST=gamestorage
