@@ -139,7 +139,7 @@ services:
 
     # Generates RealTime analytics jar, used in Analytics Backend
     realtime:
-        image: eucm/rage-analytics-realtime:1.3.0
+        image: eucm/rage-analytics-realtime:1.3.1
 
     # Analytics Backend
     # (SISA asset: Server-side Interaction Storage & Analytics)
