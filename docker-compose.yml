@@ -14,6 +14,7 @@ services:
         container_name: "redis"
         volumes:
             - ./data/redis:/data
+    restart: always
 
     # A scalable cache
     #     saves data to ./data/mongo
@@ -22,6 +23,7 @@ services:
         container_name: "mongo"
         volumes:
             - ./data/mongo:/data/db
+    restart: always
 
     # Full-text search & analytics DB
     #     saves data to ./data/elastic
@@ -33,6 +35,7 @@ services:
         ports: 
             - "9217:9217"
             - "9317:9317"
+    restart: always
 
     # Full-text search & analytics DB
     #     saves data to ./data/elastic5
@@ -46,6 +49,7 @@ services:
         ports: 
             - "9200:9200"
             - "9300:9300"
+    restart: always
 
     # Kibana 5.0.0-alpha5
     kibana:
@@ -64,6 +68,7 @@ services:
             - kibana-data:/usr/share/kibana/optimize/
         ports: 
             - "5601:5601"
+    restart: always
 
     # Kafka (A scalable queue) + Zookeeper (Distributed conf. service)
     # as of 2016.10 -- kafka:0.10.0.1, zookeeper:3.4.5+dfsg-2
@@ -76,6 +81,7 @@ services:
         ports: 
             - "2181:2181"
             - "9092:9092"
+    restart: always
 
     # nimbus: supervises everything; talks to zookeeper
     # in e-ucm/dockerized-storm -- storm:1.0.2
@@ -89,6 +95,7 @@ services:
             - UI_PORT_8081_TCP_ADDR=ui
         ports:
             - "6627:6627"
+    restart: always
 
     # ui: allows access to logs
     # in e-ucm/dockerized-storm -- storm:1.0.2
@@ -102,6 +109,7 @@ services:
             - UI_PORT_8081_TCP_ADDR=ui
         ports: 
             - "8081:8081"
+    restart: always
 
     # supervisor: supervises actual workers
     # in e-ucm/dockerized-storm -- storm:1.0.2
@@ -113,6 +121,7 @@ services:
             - KZK_PORT_2181_TCP_ADDR=kzk
             - NIMBUS_PORT_6627_TCP_ADDR=nimbus
             - UI_PORT_8081_TCP_ADDR=ui
+    restart: always
 
     # OpenLRS, an open LRS that speaks xAPI
     #   requires: elastic, redis
@@ -124,6 +133,7 @@ services:
             - ELASTIC_PORT_9300_TCP=tcp://elastic:9317
         ports:
             - "8180:8080"
+    restart: always
 
     # Authentication & Authorization
     # (part of SDA asset: Sever-side Dashboard & Analytics)
@@ -137,6 +147,7 @@ services:
             - A2_ROOTPASSWORD=${ROOT_PASS}
         ports: 
             - "3000:3000"
+    restart: always
 
     # Generates RealTime analytics jar, used in Analytics Backend
     realtime:
@@ -167,6 +178,7 @@ services:
             - ./data/back:/app/analysis
         ports:
             - "3300:3300"
+    restart: always
 
     # Analytics Frontend
     # (part of SDA asset: Server-side Dashboard and Analytics)
@@ -182,6 +194,7 @@ services:
             - A2_PORT=tcp://a2:3000
             - KIBANA_PORT=tcp://kibana:5601
             - RAGE_ANALYTICS_FRONTEND_A2ADMINPASSWORD=${ROOT_PASS}
+    restart: always
 
     # Game Storage Server
     # (SIS asset: Server-side Interaction Storage)
@@ -196,6 +209,8 @@ services:
             - RAGE_GAMESTORAGE_A2ADMINPASSWORD=${ROOT_PASS}
         ports:
             - "3400:3400" 
+    restart: always
+
 volumes:
     kibana-data:
         driver: local
