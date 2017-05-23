@@ -31,8 +31,8 @@ services:
         volumes:
             - ./data/elastic:/usr/share/elasticsearch/data
         ports: 
-            - "9217:9217"
-            - "9317:9317"
+            - "127.0.0.1:9217:9217"
+            - "127.0.0.1:9317:9317"
 
     # Full-text search & analytics DB
     #     saves data to ./data/elastic5
@@ -44,8 +44,8 @@ services:
         volumes:
             - ./data/elastic5:/usr/share/elasticsearch/data
         ports: 
-            - "9200:9200"
-            - "9300:9300"
+            - "127.0.0.1:9200:9200"
+            - "127.0.0.1:9300:9300"
 
     # Kibana 5.0.0-alpha5
     kibana:
@@ -63,7 +63,7 @@ services:
         volumes:
             - kibana-data:/usr/share/kibana/optimize/
         ports: 
-            - "5601:5601"
+            - "127.0.0.1:5601:5601"
 
     # Kafka (A scalable queue) + Zookeeper (Distributed conf. service)
     # as of 2016.10 -- kafka:0.10.0.1, zookeeper:3.4.5+dfsg-2
@@ -74,8 +74,8 @@ services:
             - ADVERTISED_HOST=kzk
             - ADVERTISED_PORT=9092
         ports: 
-            - "2181:2181"
-            - "9092:9092"
+            - "127.0.0.1:2181:2181"
+            - "127.0.0.1:9092:9092"
 
     # nimbus: supervises everything; talks to zookeeper
     # in e-ucm/dockerized-storm -- storm:1.0.2
@@ -88,7 +88,7 @@ services:
             - NIMBUS_PORT_6627_TCP_ADDR=nimbus
             - UI_PORT_8081_TCP_ADDR=ui
         ports:
-            - "6627:6627"
+            - "127.0.0.1:6627:6627"
 
     # ui: allows access to logs
     # in e-ucm/dockerized-storm -- storm:1.0.2
@@ -101,7 +101,7 @@ services:
             - NIMBUS_PORT_6627_TCP_ADDR=nimbus
             - UI_PORT_8081_TCP_ADDR=ui
         ports: 
-            - "8081:8081"
+            - "127.0.0.1:8081:8081"
 
     # supervisor: supervises actual workers
     # in e-ucm/dockerized-storm -- storm:1.0.2
@@ -123,7 +123,7 @@ services:
             - REDIS_PORT_6379_TCP_ADDR=redis
             - ELASTIC_PORT_9300_TCP=tcp://elastic:9317
         ports:
-            - "8180:8080"
+            - "127.0.0.1:8180:8080"
 
     # Authentication & Authorization
     # (part of SDA asset: Sever-side Dashboard & Analytics)
@@ -166,7 +166,7 @@ services:
         volumes:
             - ./data/back:/app/analysis
         ports:
-            - "3300:3300"
+            - "127.0.0.1:3300:3300"
 
     # Analytics Frontend
     # (part of SDA asset: Server-side Dashboard and Analytics)
@@ -176,7 +176,7 @@ services:
         image: eucm/rage-analytics-frontend:1.4.0
         container_name: "front"
         ports:
-            - "3350:3350"
+            - "127.0.0.1:3350:3350"
         environment:
             - MY_HOST=front
             - A2_PORT=tcp://a2:3000
@@ -195,7 +195,7 @@ services:
             - MONGO_PORT=tcp://mongo:27017
             - RAGE_GAMESTORAGE_A2ADMINPASSWORD=${ROOT_PASS}
         ports:
-            - "3400:3400" 
+            - "127.0.0.1:3400:3400" 
 volumes:
     kibana-data:
         driver: local
