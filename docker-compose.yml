@@ -136,7 +136,7 @@ services:
             - MONGO_PORT=tcp://mongo:27017
             - A2_ROOTPASSWORD=${ROOT_PASS}
         ports: 
-            - "127.0.0.1:3000:3000"
+            - "3000:3000"
 
     # Generates RealTime analytics jar, used in Analytics Backend
     realtime:
