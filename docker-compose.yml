@@ -129,7 +129,7 @@ services:
     # (part of SDA asset: Sever-side Dashboard & Analytics)
     #   requires: redis, mongo
     a2:
-        image: eucm/a2:1.1.2
+        image: eucm/a2:1.1.4
         container_name: "a2"
         environment:
             - REDIS_PORT=tcp://redis:6379
