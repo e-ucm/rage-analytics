@@ -146,7 +146,7 @@ services:
     # (SISA asset: Server-side Interaction Storage & Analytics)
     #   requires: a2, kzk, lrs, mongo, nimbus
     back:
-        image: eucm/rage-analytics-backend:1.4.4
+        image: eucm/rage-analytics-backend:v1.5.0-beta
         container_name: "back"
         volumes_from:
             - realtime
@@ -173,7 +173,7 @@ services:
     #   requires: a2, back (accessed via a2)
     #   NOTE - a2 is assumed to be exposed at the same external IP used by front
     front:
-        image: eucm/rage-analytics-frontend:1.4.0
+        image: eucm/rage-analytics-frontend:v1.5.0-beta
         container_name: "front"
         ports:
             - "127.0.0.1:3350:3350"
