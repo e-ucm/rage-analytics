@@ -1,0 +1,22 @@
+#
+# RAGE WP2 server-side infrastructure
+# This version requires the use of 
+#   docker v1.9+
+#   docker-compose v1.5+, running with --x-experimental-networking
+#
+version: '2'
+
+services:
+    # Game Storage Server
+    # (SIS asset: Server-side Interaction Storage)
+    #   requires: a2, mongo
+    gamestorage:
+        image: eucm/rage-gamestorage-server:1.0.2
+        container_name: "gamestorage"
+        environment:
+            - MY_HOST=gamestorage
+            - A2_PORT=tcp://a2:3000
+            - MONGO_PORT=tcp://mongo:27017
+            - RAGE_GAMESTORAGE_A2ADMINPASSWORD=${ROOT_PASS}
+        ports:
+            - "127.0.0.1:3400:3400" 

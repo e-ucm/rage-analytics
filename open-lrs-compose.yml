@@ -1,0 +1,30 @@
+#
+# RAGE WP2 server-side infrastructure
+# This version requires the use of 
+#   docker v1.9+
+#   docker-compose v1.5+, running with --x-experimental-networking
+#
+version: '2'
+
+services:
+    # OpenLRS, an open LRS that speaks xAPI
+    #   requires: elastic, redis
+    lrs:
+        image: eucm/openlrs
+        container_name: "lrs"
+        environment:
+            - REDIS_PORT_6379_TCP_ADDR=redis
+            - ELASTIC_PORT_9300_TCP=tcp://elastic:9317
+        ports:
+            - "127.0.0.1:8180:8080"
+            
+    # Full-text search & analytics DB
+    #     saves data to ./data/elastic
+    elastic:
+        image: eucm/elasticsearch
+        container_name: "elastic"
+        volumes:
+            - ./data/elastic:/usr/share/elasticsearch/data
+        ports: 
+            - "127.0.0.1:9217:9217"
+            - "127.0.0.1:9317:9317"
