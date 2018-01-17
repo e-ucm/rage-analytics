@@ -42,6 +42,10 @@ services:
         environment:
             - ES_JAVA_OPTS=-Xms2g -Xmx2g
             - xpack.security.enabled=false
+            - xpack.monitoring.enabled=false
+            - xpack.graph.enabled=false
+            - xpack.watcher.enabled=false
+            - xpack.ml.enabled=false
         volumes:
             - ./data/elastic5:/usr/share/elasticsearch/data
         ports: 
@@ -61,6 +65,10 @@ services:
             - KIBANA_A2ADMINPASSWORD=${ROOT_PASS}
             - TILEMAP_OPTIONS_MAXZOOM=19
             - TILEMAP_URL=https://a.tile.openstreetmap.org/{z}/{x}/{y}.png
+            - XPACK_REPORTING_ENABLED=false
+            - XPACK_SECURITY_ENABLED=false
+            - XPACK_MONITORING_ENABLED=false
+            - XPACK_GRAPH_ENABLED=false
         volumes:
             - kibana-data:/usr/share/kibana/optimize/
         ports: 
