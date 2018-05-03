@@ -21,8 +21,8 @@ COMPOSE_PROJ_NAME='rage'
 COMPOSE_NET_NAME="${COMPOSE_PROJ_NAME}_default"
 # external constants
 MIN_DOCKER_VERSION='1.9'
-MIN_COMPOSE_VERSION='1.16.1'
-INSTALL_COMPOSE_VERSION='1.16.1'
+MIN_COMPOSE_VERSION='1.7.1'
+INSTALL_COMPOSE_VERSION='1.17.0'
 DOCKER_SH_URL='https://get.docker.com/'
 DOCKER_CMD='docker'
 COMPOSE_BASE_URL='https://github.com/docker/compose/releases/download/'
@@ -349,6 +349,9 @@ function start() {
   launch_and_wait 5 back
   wait_for_service back 3300 'RAGE Analytics Backend'
 
+  launch_and_wait 5 persister
+  wait_for_service persister 3003 'Kafka Traces Persister'
+
   recho " * use '$0 logs <service>' to inspect service logs"
   recho " * use '$0 status' to see status of all services"
   recho "output of '$0 status' follows:"
@@ -506,4 +509,3 @@ function report() {
 
 # entrypoint
 main $@
-
