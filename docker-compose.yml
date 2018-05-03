@@ -4,7 +4,7 @@
 #   docker v1.9+
 #   docker-compose v1.5+, running with --x-experimental-networking
 #
-version: '2'
+version: '3'
 
 services:
     # A fast in-memory store
@@ -23,17 +23,6 @@ services:
         volumes:
             - ./data/mongo:/data/db
 
-    # Full-text search & analytics DB		
-    #     saves data to ./data/elastic		
-    elastic:
-        image: eucm/elasticsearch
-        container_name: "elastic"
-        volumes:
-            - ./data/elastic:/usr/share/elasticsearch/data
-        ports: 
-            - "127.0.0.1:9217:9217"
-            - "127.0.0.1:9317:9317"
-
     # Full-text search & analytics DB
     #     saves data to ./data/elastic5
     elastic5:
@@ -48,7 +37,7 @@ services:
             - xpack.ml.enabled=false
         volumes:
             - ./data/elastic5:/usr/share/elasticsearch/data
-        ports: 
+        ports:
             - "127.0.0.1:9200:9200"
             - "127.0.0.1:9300:9300"
 
@@ -61,6 +50,7 @@ services:
             - SIGNUP_APP=true
             - A2_API_PATH=http://a2:3000/api/
             - MY_HOST=http://kibana:5601
+            - KIBANA_BASE_PATH=/api/proxy/kibana
             - SERVER_BASEPATH=/api/proxy/kibana
             - KIBANA_A2ADMINPASSWORD=${ROOT_PASS}
             - TILEMAP_OPTIONS_MAXZOOM=19
@@ -71,18 +61,18 @@ services:
             - XPACK_GRAPH_ENABLED=false
         volumes:
             - kibana-data:/usr/share/kibana/optimize/
-        ports: 
+        ports:
             - "127.0.0.1:5601:5601"
 
     # Kafka (A scalable queue) + Zookeeper (Distributed conf. service)
-    # as of 2016.10 -- kafka:0.11.0.1, zookeeper:3.4.5+dfsg-2
+    # as of 2016.10 -- kafka:0.10.0.1, zookeeper:3.4.5+dfsg-2
     kzk:
         image: eucm/kzk:0.11.0.1
         container_name: "kzk"
         environment:
             - ADVERTISED_HOST=kzk
             - ADVERTISED_PORT=9092
-        ports: 
+        ports:
             - "127.0.0.1:2181:2181"
             - "127.0.0.1:9092:9092"
 
@@ -109,7 +99,7 @@ services:
             - KZK_PORT_2181_TCP_ADDR=kzk
             - NIMBUS_PORT_6627_TCP_ADDR=nimbus
             - UI_PORT_8081_TCP_ADDR=ui
-        ports: 
+        ports:
             - "127.0.0.1:8081:8081"
 
     # supervisor: supervises actual workers
@@ -123,20 +113,10 @@ services:
             - NIMBUS_PORT_6627_TCP_ADDR=nimbus
             - UI_PORT_8081_TCP_ADDR=ui
 
-    # OpenLRS, an open LRS that speaks xAPI		
-    #   requires: elastic, redis		
-    lrs:
-        image: eucm/openlrs
-        container_name: "lrs"
-        environment:
-            - REDIS_PORT_6379_TCP_ADDR=redis
-            - ELASTIC_PORT_9300_TCP=tcp://elastic:9317
-        ports:
-            - "127.0.0.1:8180:8080"
-
     # Authentication & Authorization
     # (part of SDA asset: Sever-side Dashboard & Analytics)
     #   requires: redis, mongo
+
     a2:
         image: eucm/a2:1.5.0
         container_name: "a2"
@@ -155,7 +135,7 @@ services:
     # (SISA asset: Server-side Interaction Storage & Analytics)
     #   requires: a2, kzk, lrs, mongo, nimbus
     back:
-        image: eucm/rage-analytics-backend:1.5.1
+        image: eucm/rage-analytics-backend:1.5.2
         container_name: "back"
         volumes_from:
             - realtime
@@ -184,31 +164,31 @@ services:
     #   requires: a2, back (accessed via a2)
     #   NOTE - a2 is assumed to be exposed at the same external IP used by front
     front:
-        image: eucm/rage-analytics-frontend:1.5.1
+        image: eucm/rage-analytics-frontend:1.5.2
         container_name: "front"
-        ports:
-            - "3350:3350"
         environment:
             - MY_HOST=front
             - A2_PORT=tcp://a2:3000
             - KIBANA_PORT=tcp://kibana:5601
             - RAGE_ANALYTICS_FRONTEND_A2ADMINPASSWORD=${ROOT_PASS}
+        ports:
+            - "127.0.0.1:3350:3350"
 
     # Analytics Teaching Assistant Frontend
     # (part of SDA asset: Server-side Dashboard and Analytics)
     #   requires: a2, back (accessed via a2)
     #   NOTE - a2 is assumed to be exposed at the same external IP used by front
     teas:
-        image: eucm/rage-analytics-teaching-assistant-frontend:1.5.1
+        image: eucm/rage-analytics-teaching-assistant-frontend:1.5.2
         container_name: "teas"
-        ports:
-            - "3550:3550"
         environment:
             - MY_HOST=teas
             - A2_PORT=tcp://a2:3000
             - KIBANA_PORT=tcp://kibana:5601
             - RAGE_ANALYTICS_TEACHING_ASSISTANT_FRONTEND_A2ADMINPASSWORD=${ROOT_PASS}
-
+        ports:
+            - "127.0.0.1:3550:3550"
+    
     # Game Storage Server
     # (SIS asset: Server-side Interaction Storage)
     #   requires: a2, mongo
@@ -222,7 +202,23 @@ services:
             - RAGE_GAMESTORAGE_A2ADMINPASSWORD=${ROOT_PASS}
         ports:
             - "127.0.0.1:3400:3400"
-
+    persister:
+        image: eucm/rage-kafka-traces-persister
+        container_name: "persister"
+        environment:
+            - MY_HOST=persister
+            - MONGO_PORT=tcp://mongo:27017
+            - KZK_PORT=tcp://kzk:2181
+        volumes:
+            - ./data/traces:/app/traces
+        ports:
+            - "127.0.0.1:3003:3003"
 volumes:
     kibana-data:
         driver: local
+		
+		
+		
+		
+		
+
