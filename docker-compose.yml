@@ -4,7 +4,7 @@
 #   docker v1.9+
 #   docker-compose v1.5+, running with --x-experimental-networking
 #
-version: '3'
+version: '2'
 
 services:
     # A fast in-memory store
@@ -216,9 +216,3 @@ services:
 volumes:
     kibana-data:
         driver: local
-		
-		
-		
-		
-		
-
