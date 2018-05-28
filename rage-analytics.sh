@@ -236,9 +236,10 @@ function wait_for_service() {
   fi
   SERVICE_IP=$( docker inspect ${CONTAINERS[$1]} \
     | grep IPAddress | grep -oE '([0-9]{1,3}[.]*){4}' )
+  SERVICE_PORT=$2
   echo -n "Waiting for $1 to be up at ${SERVICE_IP}:$2 ... "
   T=0
-  until netcat -z ${SERVICE_IP} $2 ; do
+  until $(docker run --net=${COMPOSE_NET_NAME} --rm appropriate/nc -z ${SERVICE_IP} ${SERVICE_PORT}) ; do
       sleep 1s
       echo -n "."
       ((T++))

@@ -37,9 +37,6 @@ services:
             - xpack.ml.enabled=false
         volumes:
             - ./data/elastic5:/usr/share/elasticsearch/data
-        ports:
-            - "127.0.0.1:9200:9200"
-            - "127.0.0.1:9300:9300"
 
     # Kibana 5.6.2
     kibana:
@@ -61,8 +58,6 @@ services:
             - XPACK_GRAPH_ENABLED=false
         volumes:
             - kibana-data:/usr/share/kibana/optimize/
-        ports:
-            - "127.0.0.1:5601:5601"
 
     # Kafka (A scalable queue) + Zookeeper (Distributed conf. service)
     # as of 2016.10 -- kafka:0.10.0.1, zookeeper:3.4.5+dfsg-2
@@ -72,9 +67,6 @@ services:
         environment:
             - ADVERTISED_HOST=kzk
             - ADVERTISED_PORT=9092
-        ports:
-            - "127.0.0.1:2181:2181"
-            - "127.0.0.1:9092:9092"
 
     # nimbus: supervises everything; talks to zookeeper
     # in e-ucm/dockerized-storm -- storm:1.1.1
@@ -86,8 +78,6 @@ services:
             - KZK_PORT_2181_TCP_ADDR=kzk
             - NIMBUS_PORT_6627_TCP_ADDR=nimbus
             - UI_PORT_8081_TCP_ADDR=ui
-        ports:
-            - "127.0.0.1:6627:6627"
 
     # ui: allows access to logs
     # in e-ucm/dockerized-storm -- storm:1.1.1
@@ -99,8 +89,6 @@ services:
             - KZK_PORT_2181_TCP_ADDR=kzk
             - NIMBUS_PORT_6627_TCP_ADDR=nimbus
             - UI_PORT_8081_TCP_ADDR=ui
-        ports:
-            - "127.0.0.1:8081:8081"
 
     # supervisor: supervises actual workers
     # in e-ucm/dockerized-storm -- storm:1.1.1
@@ -156,8 +144,6 @@ services:
             - USE_LRS=false
         volumes:
             - ./data/back:/app/analysis
-        ports:
-            - "127.0.0.1:3300:3300"
 
     # Analytics Frontend
     # (part of SDA asset: Server-side Dashboard and Analytics)
@@ -171,8 +157,6 @@ services:
             - A2_PORT=tcp://a2:3000
             - KIBANA_PORT=tcp://kibana:5601
             - RAGE_ANALYTICS_FRONTEND_A2ADMINPASSWORD=${ROOT_PASS}
-        ports:
-            - "127.0.0.1:3350:3350"
 
     # Analytics Teaching Assistant Frontend
     # (part of SDA asset: Server-side Dashboard and Analytics)
@@ -186,8 +170,6 @@ services:
             - A2_PORT=tcp://a2:3000
             - KIBANA_PORT=tcp://kibana:5601
             - RAGE_ANALYTICS_TEACHING_ASSISTANT_FRONTEND_A2ADMINPASSWORD=${ROOT_PASS}
-        ports:
-            - "127.0.0.1:3550:3550"
     
     # Game Storage Server
     # (SIS asset: Server-side Interaction Storage)
@@ -200,8 +182,7 @@ services:
             - A2_PORT=tcp://a2:3000
             - MONGO_PORT=tcp://mongo:27017
             - RAGE_GAMESTORAGE_A2ADMINPASSWORD=${ROOT_PASS}
-        ports:
-            - "127.0.0.1:3400:3400"
+
     persister:
         image: eucm/rage-kafka-traces-persister
         container_name: "persister"
@@ -211,8 +192,7 @@ services:
             - KZK_PORT=tcp://kzk:2181
         volumes:
             - ./data/traces:/app/traces
-        ports:
-            - "127.0.0.1:3003:3003"
+
 volumes:
     kibana-data:
         driver: local
