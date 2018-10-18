@@ -118,12 +118,15 @@ services:
     #   requires: redis, mongo
 
     a2:
-        image: eucm/a2:1.5.0
+        image: eucm/a2:impA2
         container_name: "a2"
         environment:
             - REDIS_PORT=tcp://redis:6379
             - MONGO_PORT=tcp://mongo:27017
             - A2_ROOTPASSWORD=${ROOT_PASS}
+            - LTI_BACK_PROTOCOL=http
+            - LTI_BACK_HOST=back
+            - LTI_BACK_PORT=3300
         ports:
             - "3000:3000"
 
