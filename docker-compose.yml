@@ -152,7 +152,7 @@ services:
             - NIMBUS_PORT=tcp://nimbus:6627
             - ELASTICSEARCH_PORT=tcp://elastic5:9200
             - RAGE_ANALYTICS_BACKEND_STORMPATH=/app/storm_vol/bin
-            - RAGE_ANALYTICS_BACKEND_REALTIMEJAR=/app/output/real-time-default-topology/
+            - RAGE_ANALYTICS_BACKEND_REALTIMEJAR=/analysis/output/real-time-default-topology/
             - RAGE_ANALYTICS_BACKEND_ANALYSISFOLDER=/app/analysis/
             - RAGE_ANALYTICS_BACKEND_A2ADMINPASSWORD=${ROOT_PASS}
             - MAX_KIBANA_PRECISION=19
