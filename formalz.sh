@@ -341,7 +341,7 @@ echo -e "\n\n\e[31m### Saving the configuration for webhook ###\n\n\e[0m"
 
 compose=$(cat "docker-compose.yml" | sed 's/\(FORMALZ_GAME_ID=\)\(.*\)/\1'$gameid'/')
 compose=$(echo "$compose" | sed 's/\(FORMALZ_VERSION_ID=\)\(.*\)/\1'$versionid'/')
-compose=$(echo "$compose" | sed 's/\(FORMALZ_BASE_URL=\)\(.*\)/\1'$domain'/')
+compose=$(echo "$compose" | sed 's#\(FORMALZ_BASE_URL=\)\(.*\)#\1'$domain'#')
 
 rm "docker-compose.yml"
 echo "$compose" > "docker-compose.yml"
