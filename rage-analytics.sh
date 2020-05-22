@@ -22,7 +22,7 @@ COMPOSE_NET_NAME="${COMPOSE_PROJ_NAME}_default"
 # external constants
 MIN_DOCKER_VERSION='1.9'
 MIN_COMPOSE_VERSION='1.7.1'
-INSTALL_COMPOSE_VERSION='1.17.0'
+INSTALL_COMPOSE_VERSION='1.24.1'
 DOCKER_SH_URL='https://get.docker.com/'
 DOCKER_CMD='docker'
 COMPOSE_BASE_URL='https://github.com/docker/compose/releases/download/'
@@ -199,9 +199,10 @@ function update_compose() {
 
 # gets composition file and pulls all images from DockerHub
 function get_composition_and_containers() {
+  branch=$(git branch | sed -n -e 's/^\* \(.*\)/\1/p')
   BASE="https://raw.githubusercontent.com/e-ucm/rage-analytics/"
-  COMPOSE_YML="${BASE}master/docker-compose.yml"
-  EXTENSION_YML="${BASE}master/${COMPOSE_FILE}"
+  COMPOSE_YML="${BASE}${branch}/docker-compose.yml"
+  EXTENSION_YML="${BASE}${branch}/${COMPOSE_FILE}"
   wget ${COMPOSE_YML} -O docker-compose.yml
   recho "      Downloading images"
   recho "-------------------------------"
@@ -319,7 +320,7 @@ function start() {
 
   if [[ "${array[2]}" != "$INSTALL_COMPOSE_VERSION" ]] ; then
       echo "  docker-compose version $INSTALL_COMPOSE_VERSION required, available ${array[2]}"
-      exit 0
+      exit 1
   fi
 
   recho "       Launching images"
@@ -348,6 +349,10 @@ function start() {
 
   launch_and_wait 5 back
   wait_for_service back 3300 'RAGE Analytics Backend'
+
+  launch_and_wait 5 webhook
+  wait_for_service webhook 4050 'Beaconing Analytics Webhook'
+
 
   launch_and_wait 5 persister
   wait_for_service persister 3003 'Kafka Traces Persister'
