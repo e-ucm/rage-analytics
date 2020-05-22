@@ -1,0 +1,10 @@
+{
+  "title": "Post log with Writing",
+  "visState": "{\"title\":\"Post log with Writing\",\"type\":\"table\",\"params\":{\"perPage\":10,\"showMeticsAtAllLevels\":false,\"showPartialRows\":false,\"showTotal\":false,\"sort\":{\"columnIndex\":null,\"direction\":null},\"totalFunc\":\"sum\",\"type\":\"table\"},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"avg\",\"schema\":\"metric\",\"params\":{\"field\":\"out.ext.writing_time\",\"customLabel\":\"Writing\"}},{\"id\":\"2\",\"enabled\":true,\"type\":\"avg\",\"schema\":\"metric\",\"params\":{\"field\":\"out.score\",\"customLabel\":\"Distance\"}},{\"id\":\"3\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"bucket\",\"params\":{\"field\":\"out.timestamp\",\"size\":10000,\"order\":\"desc\",\"orderBy\":\"2\",\"customLabel\":\"Timestamp\"}},{\"id\":\"4\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"bucket\",\"params\":{\"field\":\"out.name.keyword\",\"size\":1000,\"order\":\"desc\",\"orderBy\":\"2\",\"customLabel\":\"Student\"}},{\"id\":\"5\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"bucket\",\"params\":{\"field\":\"out.response.keyword\",\"size\":10000,\"order\":\"desc\",\"orderBy\":\"2\",\"customLabel\":\"Response\"}}],\"listeners\":{}}",
+  "uiStateJSON": "{\"vis\":{\"params\":{\"sort\":{\"columnIndex\":0,\"direction\":\"desc\"}}}}",
+  "description": "",
+  "version": 1,
+  "kibanaSavedObjectMeta": {
+    "searchSourceJSON": "{\"index\":\"5c8fe8d75e3d6c0080bfa9cb\",\"query\":{\"query_string\":{\"query\":\"selected && out.target.keyword:post\",\"analyze_wildcard\":true}},\"filter\":[]}"
+  }
+}
