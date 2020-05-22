@@ -1,3 +1,27 @@
+# FORMALZ SPECIFIC BRANCH
+
+Included in this branch there is everything needed to deploy a rage-analytics framework with everything needed to manage FormalZ activities.
+
+It is **HIGHLY RECOMMENDED** to modify the file **formalz.sh**. At the beginning of the document there are some configuration parameters that should be personalized. These config include:
+* **developeruser**: the username of the admin/developer username.
+* **developeremail**: its email.
+* **developerpass**: its password.
+* **domain**: The domain name where the analytics framework is hosted.
+
+## Installation
+
+**docker and docker-compose need to be installed.**
+
+There is no need to modify docker-compose.yml or to run ./rage-analytics.sh.
+
+There is **only one step**: ./formalz.sh
+
+## Additional utils included
+
+There is included in this repository a folder called **utils**. In this folder there is a PHP file that includes a simple API to manage the framework simply through the webhook.
+
+Additionally a trace sender is included in a folder. The trace sender uses anonymous users so, if anonymous users are not enabled in the activity, it will not work unless modified for login up the user.
+
 # RAGE Analytics Environment
 
 This repository contains scripts to launch and manage the (evolving) RAGE Analytics Environment.
