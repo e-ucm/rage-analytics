@@ -138,7 +138,7 @@ services:
     # (SISA asset: Server-side Interaction Storage & Analytics)
     #   requires: a2, kzk, lrs, mongo, nimbus
     back:
-        image: eucm/rage-analytics-backend:new-multilevel
+        image: eucm/rage-analytics-backend:formalz
         container_name: "back"
         volumes_from:
             - realtime
@@ -155,6 +155,9 @@ services:
             - RAGE_ANALYTICS_BACKEND_REALTIMEJAR=/analysis/output/real-time-default-topology/
             - RAGE_ANALYTICS_BACKEND_ANALYSISFOLDER=/app/analysis/
             - RAGE_ANALYTICS_BACKEND_A2ADMINPASSWORD=${ROOT_PASS}
+            - RAGE_ANALYTICS_BACKEND_KIBANAVERSION=5.6.2
+            - RAGE_ANALYTICS_BACKEND_KIBANAHOST=kibana
+            - RAGE_ANALYTICS_BACKEND_KIBANAURL=http://kibana:5601/
             - MAX_KIBANA_PRECISION=19
             - USE_LRS=false
         volumes:
@@ -167,7 +170,7 @@ services:
     #   requires: a2, back (accessed via a2)
     #   NOTE - a2 is assumed to be exposed at the same external IP used by front
     front:
-        image: eucm/rage-analytics-frontend:minieditorKahoot
+        image: eucm/rage-analytics-frontend:formalz
         container_name: "front"
         environment:
             - MY_HOST=front
@@ -216,6 +219,29 @@ services:
             - ./data/traces:/app/traces
         ports:
             - "127.0.0.1:3003:3003"
+
+# Beaconing Webhook
+    # (Webhook for beaconing analytics)
+    #   requires: a2, kzk, mongo
+    webhook:
+        image: eucm/beaconing-analytics-webhook:formalz
+        container_name: "webhook"
+        environment:
+            - MY_HOST=webhook
+            - A2_PORT=tcp://a2:3000
+            - KZK_PORT=tcp://zookeeper:2181
+            - MONGO_PORT=tcp://mongo:27017
+            - BEACONING_ANALYTICS_WEBHOOK_A2ADMINPASSWORD=${ROOT_PASS}
+            - ELASTIC_HOST=http://elastic5:9200
+            - BACKEND_NAME=back
+            - BACKEND_PORT=3300
+            - FORMALZ_GAME_ID=gameid
+            - FORMALZ_VERSION_ID=versionid
+            - FORMALZ_BASE_URL=http://localhost:3000/
+        restart: unless-stopped
+        ports:
+            - "127.0.0.1:4051:4050"
+
 volumes:
     kibana-data:
         driver: local
