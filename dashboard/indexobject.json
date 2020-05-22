@@ -1,0 +1,36 @@
+{
+  "out": {
+    "name": "",
+    "gameplayId": "",
+    "type_hashCode": 0,
+    "score": 0.01,
+    "response": "",
+    "type": "",
+    "event_hashcode": 0,
+    "target": "",
+    "versionId": "",
+    "success": false,
+    "gameplayId_hashCode": 0,
+    "event": "",
+    "timestamp": "2000-01-19T11:05:27.772Z",
+    "target_hashCode": 0,
+    "stored": "2000-01-19T11:05:27.772Z",
+    "progress": 0.01,
+    "time": 0.01,
+    "ext": {
+      "progress": 0.01,
+      "time": 0.01,
+      "location": {
+        "lat": 0.01,
+        "lon": 0.01
+      },
+      "towers": 0,
+      "money": 0,
+      "lives": 0,
+      "writing_time": 0.01
+    }
+  },
+  "activityName": "",
+  "activityId": "",
+  "classId": ""
+}
