@@ -1,0 +1,11 @@
+{
+  "name": "quickscripts",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node ./formalz.js"
+  },
+  "dependencies": {
+    "xapi-tracker": "*"
+  }
+}
