@@ -1,0 +1,21 @@
+{
+  "title": "dashboard_DEFAULT_DASHBOARD_ID",
+  "hits": 0,
+  "description": "",
+  "panelsJSON": "[{\"col\":3,\"id\":\"TimePicker_DEFAULT_DASHBOARD_ID\",\"panelIndex\":13,\"row\":1,\"size_x\":10,\"size_y\":3,\"type\":\"visualization\"},{\"col\":1,\"id\":\"TotalSessionPlayers-Cmn_DEFAULT_DASHBOARD_ID\",\"panelIndex\":2,\"row\":1,\"size_x\":2,\"size_y\":3,\"type\":\"visualization\"},{\"col\":1,\"id\":\"AWn9B35AAztPIDR8zmfT_DEFAULT_DASHBOARD_ID\",\"panelIndex\":4,\"row\":6,\"size_x\":4,\"size_y\":3,\"type\":\"visualization\"},{\"col\":5,\"id\":\"AWn9B54eAztPIDR8zmfU_DEFAULT_DASHBOARD_ID\",\"panelIndex\":5,\"row\":6,\"size_x\":4,\"size_y\":3,\"type\":\"visualization\"},{\"col\":9,\"id\":\"AWn9B7kXAztPIDR8zmfV_DEFAULT_DASHBOARD_ID\",\"panelIndex\":6,\"row\":6,\"size_x\":4,\"size_y\":3,\"type\":\"visualization\"},{\"col\":1,\"id\":\"AWn9B9qoAztPIDR8zmfW_DEFAULT_DASHBOARD_ID\",\"panelIndex\":7,\"row\":9,\"size_x\":6,\"size_y\":4,\"type\":\"visualization\"},{\"col\":7,\"id\":\"AWn9CAtHAztPIDR8zmfX_DEFAULT_DASHBOARD_ID\",\"panelIndex\":8,\"row\":9,\"size_x\":6,\"size_y\":4,\"type\":\"visualization\"},{\"col\":1,\"id\":\"AWplWp8I8LDUP6r8gZBk_DEFAULT_DASHBOARD_ID\",\"panelIndex\":9,\"row\":13,\"size_x\":6,\"size_y\":8,\"type\":\"visualization\"},{\"col\":3,\"id\":\"AWn9e4bBAztPIDR8znG8_DEFAULT_DASHBOARD_ID\",\"panelIndex\":12,\"row\":21,\"size_x\":10,\"size_y\":4,\"type\":\"visualization\"},{\"col\":7,\"id\":\"AWn9CEi1AztPIDR8zmfZ_DEFAULT_DASHBOARD_ID\",\"panelIndex\":10,\"row\":13,\"size_x\":6,\"size_y\":8,\"type\":\"visualization\"},{\"col\":1,\"id\":\"AWn9e2vBAztPIDR8znG7_DEFAULT_DASHBOARD_ID\",\"panelIndex\":11,\"row\":21,\"size_x\":2,\"size_y\":4,\"type\":\"visualization\"},{\"col\":1,\"id\":\"AWn9B08ZAztPIDR8zmfS_DEFAULT_DASHBOARD_ID\",\"panelIndex\":3,\"row\":4,\"size_x\":12,\"size_y\":2,\"type\":\"visualization\"}]",
+  "optionsJSON": "{\"darkTheme\":false}",
+  "uiStateJSON": "{\"P-0\":{\"vis\":{\"legendOpen\":false}},\"P-10\":{\"vis\":{\"legendOpen\":false,\"params\":{\"sort\":{\"columnIndex\":0,\"direction\":\"desc\"}}}},\"P-11\":{\"vis\":{\"legendOpen\":false}},\"P-12\":{\"vis\":{\"legendOpen\":false}},\"P-2\":{\"vis\":{\"defaultColors\":{\"0 - 100\":\"rgb(0,104,55)\"},\"legendOpen\":false}},\"P-3\":{\"vis\":{\"defaultColors\":{\"0 - 100\":\"rgb(0,104,55)\"},\"legendOpen\":false}},\"P-4\":{\"vis\":{\"legendOpen\":false}},\"P-5\":{\"vis\":{\"legendOpen\":false}},\"P-6\":{\"vis\":{\"legendOpen\":false}},\"P-7\":{\"vis\":{\"legendOpen\":false}},\"P-8\":{\"vis\":{\"legendOpen\":false}},\"P-9\":{\"vis\":{\"legendOpen\":false,\"params\":{\"sort\":{\"columnIndex\":0,\"direction\":\"desc\"}}}}}",
+  "version": 1,
+  "timeRestore": true,
+  "timeTo": "now",
+  "timeFrom": "now-1h",
+  "refreshInterval": {
+    "display": "5 seconds",
+    "pause": false,
+    "section": 1,
+    "value": 5000
+  },
+  "kibanaSavedObjectMeta": {
+    "searchSourceJSON": "{\"filter\":[{\"query\":{\"query_string\":{\"analyze_wildcard\":true,\"query\":\"*\"}}}],\"highlightAll\":true,\"version\":true}"
+  }
+}
