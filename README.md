@@ -1,6 +1,33 @@
-# FORMALZ SPECIFIC BRANCH
+# IMPRESS project specific branch
 
-Included in this branch there is everything needed to deploy a rage-analytics framework with everything needed to manage FormalZ activities.
+Included in this branch there is everything needed to deploy a rage-analytics framework with everything needed to manage the [IMPRESS Project](https://impress-project.eu/) activities, in particular FormalZ activities.
+
+## Demo / simple installation
+
+This repository contains all required files to setup a demo / simple installation using [Vagrant](https://www.vagrantup.com/) and [VirtualBox](https://www.virtualbox.org/). So, before continuing you need to install in your machine:
+
+- [VirtualBox](https://www.virtualbox.org/). The installation has been tested with VirtualBox 6.X.
+- [Vagrant](https://www.vagrantup.com/). The installation has been tested with vagrant 2.2.X.
+
+Once these tools are installed, then you need copy of this branch of the repository. You can either:
+1. Clone this repository and checkout the `impress` branch.
+```
+git clone https://github.com/e-ucm/rage-analytics/
+git checkout -b impress
+```
+2. Download a IMPRESS release from the [GitHub's project release page](https://github.com/e-ucm/rage-analytics/releases).
+
+ Once downloaded, you need to:
+
+3. Open a terminal.
+4. Change your current directory to the directory where you downloaded the project.
+5. Run `vagrant up`.
+
+This last step will take a while, once finished you can access [http://localhost:3000/api/proxy/afront/](http://localhost:3000/api/proxy/afront/) and start creating your own users.
+
+> Note: For FormalZ activities, you do not need to do anything else because you can access FormalZ's activities analytics dashboards directly from FormalZ UI.
+
+## Custom installation (FormalZ only)
 
 It is **HIGHLY RECOMMENDED** to modify the file **formalz.sh**. At the beginning of the document there are some configuration parameters that should be personalized. These config include:
 * **developeruser**: the username of the admin/developer username.
@@ -8,7 +35,7 @@ It is **HIGHLY RECOMMENDED** to modify the file **formalz.sh**. At the beginning
 * **developerpass**: its password.
 * **domain**: The domain name where the analytics framework is hosted.
 
-## Installation
+### Installation
 
 **docker and docker-compose need to be installed.**
 
@@ -22,37 +49,9 @@ There is included in this repository a folder called **utils**. In this folder t
 
 Additionally a trace sender is included in a folder. The trace sender uses anonymous users so, if anonymous users are not enabled in the activity, it will not work unless modified for login up the user.
 
-# RAGE Analytics Environment
+## RAGE Analytics Environment
 
-This repository contains scripts to launch and manage the (evolving) RAGE Analytics Environment.
-
-The RAGE Analytics Environment is a key component of the [RAGE](http://rageproject.eu/) EU H2020 project 
-(Realizing an Applied Game Ecosystem), in charge of providing extensible, scalable, and simple-to-manage
-game analytics for applied games.
-
-## Hardware and Software Requirements
-
-In theory, only requirements are:
-
-- docker installed, minimum required version specified in the [rage-analytics.sh](https://github.com/e-ucm/rage-analytics/blob/master/rage-analytics.sh#L21) file
-- docker-compose installed, required version specified in the [rage-analytics.sh](https://github.com/e-ucm/rage-analytics/blob/master/rage-analytics.sh#L23) file
-- Hardware:
-    * More then 12 Gb free HDD space (Note that one of the services, MongoDB, requires 3.4 Gb free HDD space to run)
-    * 4 Gb of RAM
-    * 2 CPU cores for avoiding bottlenecks
-
-Our testing environment:
-          
-- ubuntu 14.04, 14.10 x64 and 16.04.1 x86_64, all stand-alone and running in VirtualBox VMs under Windows hosts
-- docker v1.13.0, build 49bf474
-- docker-compose v1.7.1 build 0a9ab35
-- Hardware:
-    * 20 GB free HDD space
-    * 8 GB of RAM
-    * 3 CPUs @ 2.2 GHz
-
-## Further information
-For more details, check out the [RAGE Analytics wiki page](https://github.com/e-ucm/rage-analytics/wiki).
+If you want to customize the installation go to [main branch](https://github.com/e-ucm/rage-analytics) of the project.
 
 # Patreons
 
