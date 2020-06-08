@@ -53,3 +53,32 @@ Our testing environment:
 
 ## Further information
 For more details, check out the [RAGE Analytics wiki page](https://github.com/e-ucm/rage-analytics/wiki).
+
+# Patreons
+
+A special thanks to our patreons for supporting this project:
+
+<table>
+  <tr>
+    <td width="25%">
+      <a href="http://rageproject.eu/" target="_blank">
+        <img width="100%" src="https://cloud.githubusercontent.com/assets/19714314/23263715/60474132-f9df-11e6-8621-50f4c327bcb2.png" alt="RAGE project logo"/>
+      </a>
+    </td>
+    <td width="25%">
+      <a href="http://rageproject.eu/" target="_blank">
+        <img width="100%" src="https://www.e-ucm.es/LogoH2020_RAGE.png" alt="H2020 research funding logo"/>
+      </a>
+    </td>
+    <td width="25%">
+      <a href="https://impress-project.eu/" target="_blank">
+        <img width="100%" src="https://www.inesc-id.pt/wp-content/uploads/2018/01/impress_logo_703x316.png" alt="IMPRESS Logo"/>
+      </a>
+    </td>
+    <td width="25%">
+      <a href="http://erasmusplus.nl/" target="_blank">
+      <img width="100%" src="https://impress-project.eu/wp-content/uploads/2017/09/eu_flag_co_funded_700x200-300x86.png" alt="Erasmus+ Program Logo"/>
+    </a>
+  </td>
+  </tr>
+</table>
