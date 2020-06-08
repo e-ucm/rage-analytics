@@ -314,12 +314,9 @@ function start() {
   mkdir -p data/{back,elastic,elastic5,mongo,redis} >/dev/null 2>&1
   chmod 777 -R data/
 
-  composeVersion=$(docker-compose -v)
-  IFS=', ' read -r -a array <<< "$composeVersion"
-
-  if [[ "${array[2]}" != "$INSTALL_COMPOSE_VERSION" ]] ; then
-      echo "  docker-compose version $INSTALL_COMPOSE_VERSION required, available ${array[2]}"
-      exit 0
+  if ( version_ge 'docker-compose' ${MIN_COMPOSE_VERSION} ) ; then
+      echo "  docker-compose min required version $MIN_COMPOSE_VERSION"
+      exit 1
   fi
 
   recho "       Launching images"
