@@ -1,0 +1,18 @@
+[Unit]
+Description=RAGE Analytics starter
+After=docker.service network-online.target
+Requires=docker.service network-online.target
+
+[Service]
+WorkingDirectory=/home/vagrant/rage-analytics
+Type=oneshot
+RemainAfterExit=yes
+
+ExecStart=/home/vagrant/rage-analytics/rage-analytics.sh restart
+
+ExecStop=/home/vagrant/rage-analytics/rage-analytics.sh stop
+
+ExecReload=/home/vagrant/rage-analytics/rage-analytics.sh restart
+
+[Install]
+WantedBy=multi-user.target
