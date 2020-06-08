@@ -171,7 +171,7 @@ services:
         container_name: "front"
         environment:
             - MY_HOST=front
-            - A2_PORT=tcp://a2:3000
+            - A2_PORT=http://a2:3000
             - KIBANA_PORT=tcp://kibana:5601
             - RAGE_ANALYTICS_FRONTEND_A2ADMINPASSWORD=${ROOT_PASS}
         ports:
@@ -186,7 +186,7 @@ services:
         container_name: "teas"
         environment:
             - MY_HOST=teas
-            - A2_PORT=tcp://a2:3000
+            - A2_PORT=http://a2:3000
             - KIBANA_PORT=tcp://kibana:5601
             - RAGE_ANALYTICS_TEACHING_ASSISTANT_FRONTEND_A2ADMINPASSWORD=${ROOT_PASS}
         ports:
