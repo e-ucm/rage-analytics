@@ -48,7 +48,8 @@ then
   echo -e "\n\n #### A2 Running #### \n\n"
 else
   echo -e "\n\n #### A2 is not running, attempting restart #### \n\n"
-  if ! ./rage-analytics.sh restart; then
+  ./rage-analytics.sh restart
+  if [[ $? != 0 ]]; then
         echo "\n\n #### RAGE ANALYTICS NEEDS TO BE RUNNING #### \n\n"
         exit 1
   fi
