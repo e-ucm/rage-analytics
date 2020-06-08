@@ -29,7 +29,7 @@ services:
         image: docker.elastic.co/elasticsearch/elasticsearch:5.6.2
         container_name: "elastic5"
         environment:
-            - ES_JAVA_OPTS=-Xms2g -Xmx2g
+            - ES_JAVA_OPTS=-Xms1g -Xmx1g
             - xpack.security.enabled=false
             - xpack.monitoring.enabled=false
             - xpack.graph.enabled=false
@@ -127,8 +127,20 @@ services:
             - LTI_BACK_PROTOCOL=http
             - LTI_BACK_HOST=back
             - LTI_BACK_PORT=3300
+            - SMTP_HOST=mail
+            - SMTP_SSL=false
         ports:
             - "3000:3000"
+
+    mail:
+        image: maildev/maildev:1.1.0
+        container_name: "mail"
+        environment:
+            - MAILDEV_SMTP_PORT=25
+            - MAILDEV_WEB_PORT=80
+        hostname: mail
+        ports:
+            - 8025:80
 
     # Generates RealTime analytics jar, used in Analytics Backend
     realtime:

@@ -22,7 +22,7 @@ COMPOSE_NET_NAME="${COMPOSE_PROJ_NAME}_default"
 # external constants
 MIN_DOCKER_VERSION='1.9'
 MIN_COMPOSE_VERSION='1.7.1'
-INSTALL_COMPOSE_VERSION='1.24.1'
+INSTALL_COMPOSE_VERSION='1.25.5'
 DOCKER_SH_URL='https://get.docker.com/'
 DOCKER_CMD='docker'
 COMPOSE_BASE_URL='https://github.com/docker/compose/releases/download/'
@@ -356,6 +356,9 @@ function start() {
 
   launch_and_wait 5 persister
   wait_for_service persister 3003 'Kafka Traces Persister'
+
+  launch_and_wait 5 mail
+  wait_for_service mail 80 'Mail dev'
 
   recho " * use '$0 logs <service>' to inspect service logs"
   recho " * use '$0 status' to see status of all services"
